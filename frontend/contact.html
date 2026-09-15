@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Adem Yehmed</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="contact.css">
+    <script>
+        try {
+            var t = localStorage.getItem("minillm-palette");
+            if (t && t !== "vitrail") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <header class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-menu">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" id="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="index.html" class="nav-link">Chat</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+            <a href="apply.html" class="nav-link">Candidature</a>
+            <a href="contact.html" class="nav-link is-active" aria-current="page">Contact</a>
+            <a href="profile.html" class="nav-link">Profil</a>
+        </nav>
+
+        <div class="theme-picker" id="theme-picker" role="group" aria-label="Palette de couleurs">
+            <button type="button" class="swatch swatch-vitrail" data-palette="vitrail" title="Vitrail — porcelaine et outremer" aria-label="Palette Vitrail" aria-pressed="true"></button>
+            <button type="button" class="swatch swatch-atelier" data-palette="atelier" title="Atelier — terre de Sienne et sauge" aria-label="Palette Atelier" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-aube" data-palette="aube" title="Aube — lavande et violet" aria-label="Palette Aube" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-nuit" data-palette="nuit" title="Nuit — graphite et ambre" aria-label="Palette Nuit" aria-pressed="false"></button>
+        </div>
+
+        <span class="status-badge"><span class="status-dot"></span>LOCAL</span>
+    </header>
+
+    <main class="about-main">
+        <div class="about-inner">
+
+            <section class="about-hero reveal">
+                <span class="blob blob-1" aria-hidden="true"></span>
+                <span class="blob blob-2" aria-hidden="true"></span>
+                <span class="grid-dots" aria-hidden="true"></span>
+
+                <div class="about-hero-left">
+                    <p class="eyebrow">bonjour, je suis</p>
+                    <h1 class="about-name">Adem Yehmed</h1>
+                    <p class="about-role">
+                        <span id="typed-role">Ingénieur en Génie Électrique</span><span class="caret">|</span>
+                    </p>
+                    <p class="about-bio" id="about-bio">
+                        Jeune ingénieur spécialisé en systèmes embarqués et intelligence artificielle,
+                        auteur de MiniLLM — un assistant de recherche d'emploi qui s'exécute entièrement
+                        en local, pour garder le contrôle de ses données.
+                    </p>
+
+                    <div class="about-actions">
+                        <a class="primary-btn" href="mailto:ademyehmed2018@gmail.com?subject=Contact%20-%20MiniLLM">
+                            ✉ Me contacter
+                        </a>
+                        <a class="secondary-btn" href="mailto:ademyehmed2018@gmail.com" id="email-copy-btn">
+                            ademyehmed2018@gmail.com
+                        </a>
+                    </div>
+
+                    <div class="about-stats" id="about-stats">
+                        <div class="stat">
+                            <span class="stat-num" data-target="0" id="stat-skills">0</span>
+                            <span class="stat-label">compétences</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-num" data-target="0" id="stat-langs">0</span>
+                            <span class="stat-label">langues</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-num" data-target="1">1</span>
+                            <span class="stat-label">projet local</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-hero-right">
+                    <div class="avatar-orbit">
+                        <span class="ring ring-1"></span>
+                        <span class="ring ring-2"></span>
+                        <span class="ring ring-3"></span>
+                        <div class="avatar-core">AY</div>
+                        <span class="orbit-chip chip-1">C/C++</span>
+                        <span class="orbit-chip chip-2">STM32</span>
+                        <span class="orbit-chip chip-3">Python</span>
+                        <span class="orbit-chip chip-4">IA</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel about-skills reveal reveal-1">
+                <div class="panel-head">
+                    <span class="step-badge">◆</span>
+                    <div class="head-text">
+                        <span class="panel-title">Compétences</span>
+                        <span class="panel-hint">Chargées depuis votre profil MiniLLM</span>
+                    </div>
+                </div>
+                <div id="skills-bars" class="skills-bars">
+                    <p class="skills-empty">Chargement du profil…</p>
+                </div>
+            </section>
+
+            <section class="panel about-extra reveal reveal-2">
+                <div class="panel-head">
+                    <span class="step-badge">A</span>
+                    <div class="head-text">
+                        <span class="panel-title">Langues &amp; localisation</span>
+                        <span class="panel-hint">Également issues du profil</span>
+                    </div>
+                </div>
+                <div id="langs-chips" class="langs-chips">
+                    <p class="skills-empty">Chargement…</p>
+                </div>
+                <div class="about-location" id="about-location"></div>
+            </section>
+
+            <section class="panel about-project reveal reveal-3">
+                <div class="panel-head">
+                    <span class="step-badge">i</span>
+                    <div class="head-text">
+                        <span class="panel-title">À propos de MiniLLM</span>
+                        <span class="panel-hint">Pourquoi ce projet existe</span>
+                    </div>
+                </div>
+                <p class="contact-paragraph">
+                    MiniLLM fait tourner un modèle de langage directement sur la machine de l'utilisateur,
+                    via llama.cpp, pour chercher des offres, évaluer leur compatibilité, rédiger une
+                    candidature et l'envoyer avec le CV joint — sans jamais transmettre vos données à un
+                    tiers, à l'exception de la rédaction finale de l'email (API Gemini), toujours soumise
+                    à votre validation avant l'envoi.
+                </p>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="nav.js"></script>
+    <script src="contact.js"></script>
+</body>
+</html>

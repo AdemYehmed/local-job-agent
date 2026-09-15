@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Candidature</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="apply.css">
+    <script>
+        // Applique le thème enregistré avant le rendu (évite le flash)
+        try {
+            var t = localStorage.getItem("minillm-palette");
+            if (t && t !== "vitrail") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <!-- ===== Navigation globale ===== -->
+    <header class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-menu">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" id="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="index.html" class="nav-link">Chat</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+            <a href="apply.html" class="nav-link is-active" aria-current="page">Candidature</a>
+            <a href="profile.html" class="nav-link">Profil</a>
+        </nav>
+
+        <div class="theme-picker" id="theme-picker" role="group" aria-label="Palette de couleurs">
+            <button type="button" class="swatch swatch-vitrail" data-palette="vitrail" title="Vitrail — porcelaine et outremer" aria-label="Palette Vitrail" aria-pressed="true"></button>
+            <button type="button" class="swatch swatch-atelier" data-palette="atelier" title="Atelier — terre de Sienne et sauge" aria-label="Palette Atelier" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-aube" data-palette="aube" title="Aube — lavande et violet" aria-label="Palette Aube" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-nuit" data-palette="nuit" title="Nuit — graphite et ambre" aria-label="Palette Nuit" aria-pressed="false"></button>
+        </div>
+
+        <span class="status-badge"><span class="status-dot"></span>LOCAL</span>
+    </header>
+
+    <main class="page-main">
+        <div class="page-head reveal">
+            <div class="titles">
+                <p class="eyebrow">candidature spontanée</p>
+                <h1 class="page-title">Préparer une candidature</h1>
+                <p class="page-subtitle">CV et offre en entrée, email prêt à relire en sortie. Rien ne part sans votre validation.</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+
+            <!-- ===== Colonne gauche : entrées ===== -->
+            <div>
+                <section class="panel reveal reveal-1">
+                    <div class="panel-head">
+                        <span class="step-badge">1</span>
+                        <div class="head-text">
+                            <span class="panel-title">Votre CV</span>
+                            <span class="panel-hint">PDF, joint à chaque envoi</span>
+                        </div>
+                    </div>
+
+                    <label class="panel-label" for="cv-upload">Fichier PDF</label>
+                    <div class="cv-upload-row">
+                        <input type="file" id="cv-upload" accept="application/pdf">
+                        <button id="upload-cv-btn" class="secondary-btn">UPLOADER</button>
+                    </div>
+                    <div id="cv-status" class="status-text"></div>
+                </section>
+
+                <section class="panel reveal reveal-2">
+                    <div class="panel-head">
+                        <span class="step-badge">2</span>
+                        <div class="head-text">
+                            <span class="panel-title">Offre d'emploi</span>
+                            <span class="panel-hint">Offre précise, ou candidature spontanée générique</span>
+                        </div>
+                    </div>
+
+                    <div class="mode-tabs" role="tablist" aria-label="Mode de candidature">
+                        <button type="button" class="mode-tab is-active" id="mode-tab-offer" data-mode="offer">Offre précise</button>
+                        <button type="button" class="mode-tab" id="mode-tab-generic" data-mode="generic">Candidature générique</button>
+                    </div>
+
+                    <div id="offer-mode-fields">
+                        <label class="panel-label" for="job-text">Texte de l'offre</label>
+                        <textarea id="job-text" placeholder="Poste : ...&#10;Entreprise : ...&#10;Description : ..." rows="12"></textarea>
+                    </div>
+
+                    <div id="generic-mode-fields" style="display:none;">
+                        <label class="panel-label" for="company-name">Nom de l'entreprise</label>
+                        <input type="text" id="company-name" placeholder="ex: KPIT Technologies">
+                        <p class="mode-hint">Aucun poste précis ne sera mentionné — l'email reste général et présente votre profil.</p>
+                    </div>
+
+                    <div class="button-row">
+                        <button id="score-btn" class="secondary-btn">CALCULER LE SCORE</button>
+                        <button id="generate-btn" class="primary-btn">GÉNÉRER L'EMAIL</button>
+                    </div>
+                    <div id="score-result" class="score-box" style="display:none;"></div>
+                    <div id="generate-status" class="status-text"></div>
+                </section>
+            </div>
+
+            <!-- ===== Colonne droite : email ===== -->
+            <div>
+                <section class="panel reveal reveal-3">
+                    <div class="panel-head">
+                        <span class="step-badge">3</span>
+                        <div class="head-text">
+                            <span class="panel-title">Email généré</span>
+                            <span class="panel-hint">Tout reste modifiable avant l'envoi</span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="email-to">Destinataire</label>
+                        <input type="email" id="email-to" placeholder="recrutement@entreprise.com">
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="email-subject">Objet</label>
+                        <input type="text" id="email-subject" placeholder="L'objet apparaîtra ici après génération">
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="email-body">Corps de l'email</label>
+                        <textarea id="email-body" placeholder="Le contenu généré apparaîtra ici, tu peux le modifier avant d'envoyer" rows="14"></textarea>
+                    </div>
+
+                    <button id="send-btn" class="primary-btn send" disabled>VALIDER ET ENVOYER</button>
+                    <div id="send-status" class="status-text"></div>
+
+                    <p class="send-note">L'envoi demande une confirmation. Le CV uploadé est joint automatiquement.</p>
+                </section>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="nav.js"></script>
+    <script src="apply.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Chat</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Applique le thème enregistré avant le rendu (évite le flash)
+        try {
+            var t = localStorage.getItem("minillm-palette");
+            if (t && t !== "vitrail") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <!-- ===== Navigation globale ===== -->
+    <header class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-menu">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" id="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="index.html" class="nav-link is-active" aria-current="page">Chat</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+            <a href="apply.html" class="nav-link">Candidature</a>
+            <a href="profile.html" class="nav-link">Profil</a>
+        </nav>
+
+        <div class="theme-picker" id="theme-picker" role="group" aria-label="Palette de couleurs">
+            <button type="button" class="swatch swatch-vitrail" data-palette="vitrail" title="Vitrail — porcelaine et outremer" aria-label="Palette Vitrail" aria-pressed="true"></button>
+            <button type="button" class="swatch swatch-atelier" data-palette="atelier" title="Atelier — terre de Sienne et sauge" aria-label="Palette Atelier" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-aube" data-palette="aube" title="Aube — lavande et violet" aria-label="Palette Aube" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-nuit" data-palette="nuit" title="Nuit — graphite et ambre" aria-label="Palette Nuit" aria-pressed="false"></button>
+        </div>
+
+        <span class="status-badge"><span class="status-dot"></span>LOCAL</span>
+    </header>
+
+    <!-- ===== Application Chat ===== -->
+    <div class="app">
+        <div class="sidebar-scrim"></div>
+
+        <aside class="sidebar">
+            <button id="new-chat-btn" class="new-chat-btn">+ nouvelle_conversation</button>
+
+            <div class="sidebar-label">Historique</div>
+            <div id="history-list" class="history-list"></div>
+
+            <div class="sidebar-footer">
+                <div class="model-row"><span>modèle</span><strong>qwen2.5-1.5b</strong></div>
+                <div class="model-row"><span>hôte</span><strong>127.0.0.1:8000</strong></div>
+            </div>
+        </aside>
+
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Afficher l'historique" aria-expanded="false">☰</button>
+                    <div class="titles">
+                        <span class="page-title">Chat</span>
+                        <span class="model-name">qwen2.5-1.5b-instruct</span>
+                    </div>
+                </div>
+                <span class="eyebrow">exécution locale</span>
+            </header>
+
+            <div id="messages" class="messages">
+                <div class="empty-state" id="empty-state">
+                    &gt; pose une question pour commencer<br>
+                    <span class="hint">Entrée pour envoyer · Maj+Entrée pour un retour à la ligne</span>
+                </div>
+            </div>
+
+            <div class="context-toggle-row">
+                <label class="context-toggle" for="use-profile-toggle">
+                    <input type="checkbox" id="use-profile-toggle">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">Utiliser mon profil + CV comme contexte</span>
+                </label>
+                <label class="context-toggle" for="force-search-toggle">
+                    <input type="checkbox" id="force-search-toggle">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">Recherche web</span>
+                </label>
+            </div>
+
+            <form id="chat-form" class="chat-input-form">
+                <textarea
+                    id="chat-input"
+                    placeholder="Écris ton message..."
+                    rows="1"
+                    aria-label="Message"
+                ></textarea>
+                <button type="submit" id="send-btn">ENVOYER</button>
+            </form>
+        </main>
+    </div>
+
+    <script src="nav.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

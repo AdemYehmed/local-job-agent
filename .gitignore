@@ -1,0 +1,9 @@
+backend/venv/
+backend/.env
+backend/app/data/
+models/*.gguf
+third_party/llama.cpp/build/
+third_party/llama.cpp_local/
+__pycache__/
+*.pyc
+.DS_Store

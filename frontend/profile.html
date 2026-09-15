@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Profil</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="profile.css">
+    <script>
+        // Applique le thème enregistré avant le rendu (évite le flash)
+        try {
+            var t = localStorage.getItem("minillm-palette");
+            if (t && t !== "vitrail") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <!-- ===== Navigation globale ===== -->
+    <header class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-menu">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" id="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="index.html" class="nav-link">Chat</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+            <a href="apply.html" class="nav-link">Candidature</a>
+            <a href="profile.html" class="nav-link is-active" aria-current="page">Profil</a>
+        </nav>
+
+        <div class="theme-picker" id="theme-picker" role="group" aria-label="Palette de couleurs">
+            <button type="button" class="swatch swatch-vitrail" data-palette="vitrail" title="Vitrail — porcelaine et outremer" aria-label="Palette Vitrail" aria-pressed="true"></button>
+            <button type="button" class="swatch swatch-atelier" data-palette="atelier" title="Atelier — terre de Sienne et sauge" aria-label="Palette Atelier" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-aube" data-palette="aube" title="Aube — lavande et violet" aria-label="Palette Aube" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-nuit" data-palette="nuit" title="Nuit — graphite et ambre" aria-label="Palette Nuit" aria-pressed="false"></button>
+        </div>
+
+        <span class="status-badge"><span class="status-dot"></span>LOCAL</span>
+    </header>
+
+    <main class="page-main">
+        <div class="page-head reveal">
+            <div class="titles">
+                <p class="eyebrow">profil candidat</p>
+                <h1 class="page-title">Mon Profil</h1>
+                <p class="page-subtitle">Ces informations sont utilisées par l'assistant pour rédiger vos emails de candidature.</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+
+            <!-- ===== Colonne gauche : identité ===== -->
+            <div>
+                <section class="panel reveal reveal-1">
+                    <div class="panel-head">
+                        <span class="step-badge">↧</span>
+                        <div class="head-text">
+                            <span class="panel-title">Extraction automatique</span>
+                            <span class="panel-hint">Remplit les champs à partir du CV uploadé</span>
+                        </div>
+                        <div class="head-action">
+                            <button id="extract-btn" class="secondary-btn">EXTRAIRE DEPUIS MON CV</button>
+                        </div>
+                    </div>
+                    <div id="extract-status" class="status-text"></div>
+                </section>
+
+                <section class="panel reveal reveal-2">
+                    <div class="panel-head">
+                        <span class="step-badge">i</span>
+                        <div class="head-text">
+                            <span class="panel-title">Informations</span>
+                            <span class="panel-hint">Identité et formation</span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="p-name">Nom complet</label>
+                        <input type="text" id="p-name" placeholder="Prénom Nom">
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="p-email">Email</label>
+                        <input type="email" id="p-email" placeholder="prenom.nom@email.com">
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="p-degree">Formation / diplôme</label>
+                        <input type="text" id="p-degree" placeholder="Diplôme, spécialité, établissement">
+                    </div>
+
+                    <div class="field field-row">
+                        <div>
+                            <label class="panel-label" for="p-year">Année d'obtention</label>
+                            <input type="text" id="p-year" placeholder="2025">
+                        </div>
+                        <div>
+                            <label class="panel-label" for="p-location">Localisation</label>
+                            <input type="text" id="p-location" placeholder="Ville, pays">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="panel-label" for="p-summary">Résumé</label>
+                        <textarea id="p-summary" rows="3" placeholder="Deux ou trois phrases sur votre parcours et ce que vous cherchez"></textarea>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ===== Colonne droite : compétences et langues ===== -->
+            <div>
+                <section class="panel reveal reveal-3">
+                    <div class="panel-head">
+                        <span class="step-badge">◆</span>
+                        <div class="head-text">
+                            <span class="panel-title">Compétences</span>
+                            <span class="panel-hint">Entrée pour ajouter, × pour retirer</span>
+                        </div>
+                    </div>
+
+                    <div id="skills-chips" class="chips-container"></div>
+                    <div class="chip-input-row">
+                        <input type="text" id="new-skill-input" placeholder="Ajouter une compétence...">
+                        <button id="add-skill-btn" class="secondary-btn">+</button>
+                    </div>
+                </section>
+
+                <section class="panel reveal reveal-4">
+                    <div class="panel-head">
+                        <span class="step-badge">A</span>
+                        <div class="head-text">
+                            <span class="panel-title">Langues</span>
+                            <span class="panel-hint">Langue et niveau</span>
+                        </div>
+                    </div>
+
+                    <div id="languages-list" class="languages-list"></div>
+                    <div class="chip-input-row">
+                        <input type="text" id="new-lang-name" placeholder="Langue">
+                        <input type="text" id="new-lang-level" placeholder="Niveau">
+                        <button id="add-lang-btn" class="secondary-btn">+</button>
+                    </div>
+                </section>
+
+                <section class="panel save-panel reveal reveal-4">
+                    <button id="save-profile-btn" class="primary-btn send">ENREGISTRER LE PROFIL</button>
+                    <div id="save-status" class="status-text"></div>
+                </section>
+            </div>
+
+            <!-- ===== Recherche d'entreprises ===== -->
+            <section class="panel companies-panel reveal reveal-4">
+                <div class="panel-head">
+                    <span class="step-badge">⌕</span>
+                    <div class="head-text">
+                        <span class="panel-title">Recherche d'entreprises</span>
+                        <span class="panel-hint">Trouvez des entreprises actives dans un domaine, avec email de contact si disponible</span>
+                    </div>
+                </div>
+
+                <div class="companies-search-row">
+                    <div class="field" style="flex:1; margin-top:0;">
+                        <label class="panel-label" for="company-domain">Mots-clés / domaine</label>
+                        <input type="text" id="company-domain" placeholder="ex: ingénieur systèmes embarqués">
+                    </div>
+                    <div class="field" style="margin-top:0;">
+                        <label class="panel-label" for="company-region">Région</label>
+                        <input type="text" id="company-region" value="Tunisie">
+                    </div>
+                </div>
+
+                <div class="companies-suggested-row">
+                    <span class="companies-suggested-label">Suggestions :</span>
+                    <button type="button" class="suggested-chip" data-kw="ingénieur systèmes embarqués">systèmes embarqués</button>
+                    <button type="button" class="suggested-chip" data-kw="ingénieur électronique">électronique</button>
+                    <button type="button" class="suggested-chip" data-kw="ingénieur automatisation industrielle">automatisation</button>
+                    <button type="button" class="suggested-chip" data-kw="développeur firmware IoT">firmware / IoT</button>
+                    <button type="button" class="suggested-chip" data-kw="intelligence artificielle embarquée">IA embarquée</button>
+                </div>
+
+                <div class="button-row">
+                    <button id="search-companies-btn" class="primary-btn">RECHERCHER LES ENTREPRISES</button>
+                    <button id="export-csv-btn" class="secondary-btn" disabled>EXPORTER EN CSV</button>
+                </div>
+                <div id="companies-status" class="status-text"></div>
+
+                <div class="companies-table-wrapper">
+                    <table class="jobs-table" id="companies-table" style="display:none;">
+                        <thead>
+                            <tr>
+                                <th>Entreprise</th>
+                                <th>Email contact</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companies-table-body"></tbody>
+                    </table>
+                </div>
+                <p class="mode-hint">Les emails trouvés automatiquement ne sont pas garantis exacts — vérifiez avant tout envoi. Vous pouvez corriger une valeur en cliquant dessus.</p>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="nav.js"></script>
+    <script src="profile.js"></script>
+    <script src="companies.js"></script>
+</body>
+</html>

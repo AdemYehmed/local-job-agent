@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Home</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="home.css">
+    <script>
+        // Applique le thème enregistré avant le rendu (évite le flash)
+        try {
+            var t = localStorage.getItem("minillm-palette");
+            if (t && t !== "vitrail") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <!-- ===== Navigation globale ===== -->
+    <header class="topnav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-menu">
+            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" id="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link is-active" aria-current="page">Home</a>
+            <a href="index.html" class="nav-link">Chat</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+            <a href="apply.html" class="nav-link">Candidature</a>
+            <a href="profile.html" class="nav-link">Profil</a>
+        </nav>
+
+        <div class="theme-picker" id="theme-picker" role="group" aria-label="Palette de couleurs">
+            <button type="button" class="swatch swatch-vitrail" data-palette="vitrail" title="Vitrail — porcelaine et outremer" aria-label="Palette Vitrail" aria-pressed="true"></button>
+            <button type="button" class="swatch swatch-atelier" data-palette="atelier" title="Atelier — terre de Sienne et sauge" aria-label="Palette Atelier" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-aube" data-palette="aube" title="Aube — lavande et violet" aria-label="Palette Aube" aria-pressed="false"></button>
+            <button type="button" class="swatch swatch-nuit" data-palette="nuit" title="Nuit — graphite et ambre" aria-label="Palette Nuit" aria-pressed="false"></button>
+        </div>
+
+        <span class="status-badge"><span class="status-dot"></span>LOCAL</span>
+    </header>
+
+    <main class="home-main">
+        <div class="home-inner">
+
+            <!-- ===== Hero ===== -->
+            <section class="hero reveal">
+                <p class="eyebrow">assistant ia local · recherche d'emploi</p>
+                <h1 class="hero-title">MiniLLM</h1>
+                <p class="hero-subtitle">L'assistant qui vous accompagne, sans jamais exposer vos données.</p>
+                <p class="hero-text">
+                    MiniLLM cherche des offres pertinentes, évalue leur compatibilité avec votre profil,
+                    rédige une candidature adaptée et joint votre CV — tout s'exécute sur votre machine,
+                    et rien n'est envoyé nulle part sans votre accord explicite.
+                </p>
+
+                <!-- Signature : le vrai parcours de l'application -->
+                <ol class="pipeline" aria-label="Parcours de l'application">
+                    <li><span class="pipeline-step">Profil</span></li>
+                    <li><span class="pipeline-step">Offres</span></li>
+                    <li><span class="pipeline-step">CV</span></li>
+                    <li><span class="pipeline-step">Offre</span></li>
+                    <li><span class="pipeline-step">Email</span></li>
+                    <li><span class="pipeline-step">Envoi</span></li>
+                </ol>
+            </section>
+
+            <!-- ===== Barre de profil ===== -->
+            <section class="profile-bar reveal reveal-1" aria-label="À propos de l'auteur">
+                <div class="profile-bar-avatar">
+                    AY
+                    <span class="profile-bar-ring"></span>
+                </div>
+                <div class="profile-bar-text">
+                    <span class="profile-bar-name">Adem Yehmed</span>
+                    <span class="profile-bar-role"><span id="typed-role">Ingénieur en Génie Électrique</span><span class="caret">|</span></span>
+                </div>
+                <a class="profile-bar-mail" href="mailto:ademyehmed2018@gmail.com" id="email-copy-btn">
+                    ✉ ademyehmed2018@gmail.com
+                </a>
+            </section>
+
+            <!-- ===== État du système ===== -->
+            <section class="status-panel reveal reveal-1" aria-label="État de la configuration">
+                <div class="status-panel-head">
+                    <span class="status-panel-title">État de l'installation</span>
+                    <button id="refresh-status-btn" class="secondary-btn">Actualiser</button>
+                </div>
+                <div id="status-items" class="status-items">
+                    <p class="skills-empty">Vérification en cours...</p>
+                </div>
+            </section>
+
+            <!-- ===== Cartes ===== -->
+            <section class="cards" aria-label="Modules">
+                <a class="card reveal reveal-1" href="index.html">
+                    <span class="card-tag">streaming · sources</span>
+                    <h2 class="card-title">Chat</h2>
+                    <p class="card-text">Échangez avec votre LLM local, avec recherche web et contexte de profil activables à la demande.</p>
+                    <span class="card-cta">Ouvrir le Chat <span class="arrow">→</span></span>
+                </a>
+
+                <a class="card reveal reveal-2" href="jobs.html">
+                    <span class="card-tag">recherche multi-sources</span>
+                    <h2 class="card-title">Offres</h2>
+                    <p class="card-text">Explorez les offres par mots-clés, région et source, puis transférez-les en un clic vers votre candidature.</p>
+                    <span class="card-cta">Chercher des offres <span class="arrow">→</span></span>
+                </a>
+
+                <a class="card reveal reveal-3" href="apply.html">
+                    <span class="card-tag">cv + offre → email</span>
+                    <h2 class="card-title">Candidature</h2>
+                    <p class="card-text">Obtenez un score de compatibilité, puis un email de candidature prêt à relire, CV joint automatiquement.</p>
+                    <span class="card-cta">Préparer une candidature <span class="arrow">→</span></span>
+                </a>
+
+                <a class="card reveal reveal-4" href="profile.html">
+                    <span class="card-tag">compétences · langues</span>
+                    <h2 class="card-title">Mon Profil</h2>
+                    <p class="card-text">Renseignez ou extrayez automatiquement vos informations depuis votre CV, utilisées à chaque candidature.</p>
+                    <span class="card-cta">Modifier mon profil <span class="arrow">→</span></span>
+                </a>
+            </section>
+
+            <!-- ===== Bandeau technique ===== -->
+            <section class="specs reveal reveal-4" aria-label="Informations techniques">
+                <div class="spec"><span class="spec-key">auteur</span><span class="spec-val">Adem Yehmed</span></div>
+                <div class="spec"><span class="spec-key">contact</span><span class="spec-val"><a href="mailto:ademyehmed2018@gmail.com" class="spec-link">ademyehmed2018@gmail.com</a></span></div>
+                <div class="spec"><span class="spec-key">modèle</span><span class="spec-val">qwen2.5-1.5b-instruct</span></div>
+                <div class="spec"><span class="spec-key">backend</span><span class="spec-val">127.0.0.1:8000</span></div>
+                <div class="spec"><span class="spec-key">données</span><span class="spec-val">jamais envoyées à un tiers, sauf génération d'email (Gemini)</span></div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="nav.js"></script>
+    <script src="home-profile.js"></script>
+    <script src="system-status.js"></script>
+</body>
+</html>
