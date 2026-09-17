@@ -60,6 +60,7 @@ def search_via_jobspy(
         print(f"[DEBUG jobspy_search] kwargs={kwargs} -> erreur: {type(e).__name__}: {e}")
         return []
 
+    print(f"[DEBUG jobspy_search] kwargs={kwargs} -> jobs_df is None: {jobs_df is None}, empty: {jobs_df.empty if jobs_df is not None else 'N/A'}")
     if jobs_df is None or jobs_df.empty:
         return []
 
