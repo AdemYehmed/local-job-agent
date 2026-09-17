@@ -5,7 +5,14 @@ from typing import List, Optional
 
 from app.jobspy_search import search_via_jobspy
 
-app = FastAPI(title="MiniLLM Public — Recherche d'offres (sans LLM)")
+app = FastAPI(title="FindJob — Recherche d'offres")
+
+import asyncio
+from app.alert_runner import alert_loop
+
+@app.on_event("startup")
+async def _start_background_alert():
+    asyncio.create_task(alert_loop())
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,3 +115,34 @@ async def search_jobs(request: JobSearchRequest):
         raw_count=total_raw,
         filtered_count=len(all_offers),
     )
+
+
+from app.alert_runner import load_config as _alert_load_config, save_config as _alert_save_config, load_status as _alert_load_status
+
+
+class AlertConfigRequest(BaseModel):
+    keywords: str
+    region: str = "monde"
+    timelimit: str = "mois"
+    experience: str = "tout"
+    sources: List[str] = ["linkedin"]
+    interval_hours: float = 1
+    email: str
+    active: bool = True
+
+
+@app.post("/api/alert-config")
+async def set_alert_config(request: AlertConfigRequest):
+    _alert_save_config(request.model_dump())
+    return {"status": "saved"}
+
+
+@app.get("/api/alert-config")
+async def get_alert_config():
+    config = _alert_load_config()
+    return config or {}
+
+
+@app.get("/api/alert-status")
+async def get_alert_status():
+    return _alert_load_status()

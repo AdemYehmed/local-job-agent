@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FindJob — Alerte</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="public.css">
+</head>
+<body>
+    <header class="topnav">
+        <a href="index.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect x="1.6" y="1.6" width="28.8" height="28.8" rx="9" fill="#1a1e25" stroke="#3a4250" stroke-width="1.4"/>
+                <path d="M6.5 17 H11 L13.5 10 L18 22 L20.5 17 H25.5" fill="none" stroke="#f2954d" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="25.5" cy="17" r="2" fill="#6fe0a6"/>
+            </svg>
+            <span class="brand-name">FindJob</span>
+        </a>
+        <nav class="nav-menu" aria-label="Navigation principale">
+            <a href="index.html" class="nav-link">Accueil</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+        </nav>
+        <span class="status-badge"><span class="status-dot online"></span>recherche active</span>
+    </header>
+
+    <main class="page-main">
+        <div class="page-head">
+            <p class="page-kicker">alerte automatique</p>
+            <h1 class="page-title">Alerte</h1>
+            <p class="page-subtitle">Relance la recherche à intervalle régulier et t'envoie un email uniquement s'il y a du nouveau.</p>
+        </div>
+
+        <section class="panel">
+            <div class="search-grid">
+                <div class="field keywords-field">
+                    <label class="panel-label" for="alert-keywords">Mots-clés</label>
+                    <input type="text" id="alert-keywords" placeholder="ex: ingénieur junior embarqué">
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="alert-region">Région</label>
+                    <select id="alert-region">
+                        <option value="monde">Monde</option>
+                        <option value="tunisie">Tunisie</option>
+                        <option value="france">France</option>
+                        <option value="maroc">Maroc</option>
+                        <option value="algerie">Algérie</option>
+                        <option value="belgique">Belgique</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="alert-timelimit">Publié</label>
+                    <select id="alert-timelimit">
+                        <option value="tout">Toute période</option>
+                        <option value="jour">Aujourd'hui</option>
+                        <option value="semaine">Cette semaine</option>
+                        <option value="mois" selected>Ce mois</option>
+                        <option value="annee">Cette année</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="alert-experience">Expérience</label>
+                    <select id="alert-experience">
+                        <option value="tout">Tous niveaux</option>
+                        <option value="junior">Junior / débutant</option>
+                        <option value="intermediaire">Intermédiaire</option>
+                        <option value="senior">Senior</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="panel-label">Sources</label>
+                <div class="jobs-sources-row">
+                    <label class="source-checkbox"><input type="checkbox" value="linkedin" checked> LinkedIn</label>
+                    <label class="source-checkbox"><input type="checkbox" value="indeed"> Indeed</label>
+                </div>
+            </div>
+
+            <div class="search-grid" style="margin-top:16px;">
+                <div class="field">
+                    <label class="panel-label" for="alert-interval">Intervalle (heures)</label>
+                    <input type="number" id="alert-interval" min="0.5" step="0.5" value="1">
+                </div>
+                <div class="field keywords-field">
+                    <label class="panel-label" for="alert-email">Email de notification</label>
+                    <input type="email" id="alert-email" placeholder="toi@exemple.com">
+                </div>
+            </div>
+
+            <button id="save-alert-btn" class="primary-btn">ENREGISTRER ET ACTIVER</button>
+            <div id="alert-status-msg" class="status-text"></div>
+        </section>
+
+        <section class="panel">
+            <p class="panel-label" style="margin-bottom:8px;">Statut</p>
+            <div id="alert-status-display" style="font-family:var(--mono);font-size:13px;color:var(--text-dim);">Chargement...</div>
+        </section>
+    </main>
+
+    <script src="alerts.js"></script>
+</body>
+</html>
