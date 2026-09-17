@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Offres (démo publique)</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="public.css">
+</head>
+<body>
+    <header class="topnav">
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link">Home</a>
+            <a href="jobs.html" class="nav-link is-active" aria-current="page">Offres</a>
+        </nav>
+
+        <span class="status-badge"><span class="status-dot online"></span>en ligne, sans LLM</span>
+    </header>
+
+    <main class="page-main">
+        <div class="page-head">
+            <p class="page-kicker">recherche d'offres, sans modèle de langage</p>
+            <h1 class="page-title">Offres</h1>
+            <p class="page-subtitle">Résultats structurés directement par JobSpy — aucune donnée envoyée à un LLM.</p>
+        </div>
+
+        <section class="panel search-panel">
+            <div class="search-grid">
+                <div class="field keywords-field">
+                    <label class="panel-label" for="job-keywords">Mots-clés</label>
+                    <input type="text" id="job-keywords" placeholder="ex: ingénieur junior embarqué">
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="job-region">Région</label>
+                    <select id="job-region">
+                        <option value="monde">Monde</option>
+                        <option value="tunisie">Tunisie</option>
+                        <option value="france">France</option>
+                        <option value="maroc">Maroc</option>
+                        <option value="algerie">Algérie</option>
+                        <option value="belgique">Belgique</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="job-timelimit">Publié</label>
+                    <select id="job-timelimit">
+                        <option value="tout">Toute période</option>
+                        <option value="jour">Aujourd'hui</option>
+                        <option value="semaine">Cette semaine</option>
+                        <option value="mois">Ce mois</option>
+                        <option value="annee">Cette année</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="panel-label" for="job-experience">Expérience</label>
+                    <select id="job-experience">
+                        <option value="tout">Tous niveaux</option>
+                        <option value="junior">Junior / débutant</option>
+                        <option value="intermediaire">Intermédiaire</option>
+                        <option value="senior">Senior</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="panel-label">Sources</label>
+                <div class="jobs-sources-row">
+                    <label class="source-checkbox"><input type="checkbox" value="linkedin" checked> LinkedIn</label>
+                    <label class="source-checkbox"><input type="checkbox" value="indeed"> Indeed</label>
+                </div>
+                <p class="linkedin-note">Démo publique : uniquement LinkedIn et Indeed (résultats structurés sans LLM).</p>
+            </div>
+
+            <button id="search-jobs-btn" class="primary-btn">RECHERCHER</button>
+            <div id="search-status" class="status-text"></div>
+        </section>
+
+        <section class="panel results-panel">
+            <div class="panel-head">
+                <span id="results-summary" class="panel-hint results-summary"></span>
+            </div>
+
+            <div class="jobs-table-wrapper">
+                <table class="jobs-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Poste</th>
+                            <th>Entreprise</th>
+                            <th>Lieu</th>
+                            <th>Candidature</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <p class="cta-note">
+            Score de compatibilité, candidature automatisée et bien plus : disponibles dans la
+            <a href="https://github.com/AdemYehmed/local-job-agent" target="_blank" rel="noopener noreferrer">version complète sur GitHub</a>.
+        </p>
+    </main>
+
+    <script src="public-jobs.js"></script>
+</body>
+</html>

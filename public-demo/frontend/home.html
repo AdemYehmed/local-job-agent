@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLLM — Recherche d'offres, sans serveur LLM</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="public.css">
+</head>
+<body>
+    <header class="topnav">
+        <a href="home.html" class="brand">
+            <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+                <rect class="logo-frame" x="1.6" y="1.6" width="28.8" height="28.8" rx="9"/>
+                <path class="logo-caret" d="M9 12.4 L13.6 16 L9 19.6" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path class="logo-line" d="M16.4 20.4 H22.6" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+                <circle class="logo-spark" cx="23.5" cy="9.5" r="2.3"/>
+            </svg>
+            <span class="brand-name">MiniLLM</span>
+        </a>
+
+        <nav class="nav-menu" aria-label="Navigation principale">
+            <a href="home.html" class="nav-link is-active" aria-current="page">Home</a>
+            <a href="jobs.html" class="nav-link">Offres</a>
+        </nav>
+
+        <span class="status-badge"><span class="status-dot online"></span>en ligne, sans LLM</span>
+    </header>
+
+    <section class="hero-section">
+        <div>
+            <p class="hero-kicker">démo publique — recherche d'offres seule</p>
+            <h1 class="hero-title">Un outil de recherche d'offres qui ne devine rien.</h1>
+            <p class="hero-body">
+                Cette page interroge directement LinkedIn et Indeed pour des résultats déjà structurés —
+                pas de modèle de langage, pas de données envoyées à un tiers. Elle fait partie d'un projet
+                plus large que j'ai construit pour ma propre recherche d'emploi : recherche, score de
+                compatibilité, candidature spontanée et chat, le tout exécuté en local sur votre machine.
+            </p>
+            <div class="hero-actions">
+                <a href="jobs.html" class="btn-signal">Chercher des offres</a>
+                <a href="https://github.com/AdemYehmed/local-job-agent" target="_blank" rel="noopener noreferrer" class="btn-ghost">Voir le code source</a>
+            </div>
+        </div>
+
+        <div class="trace-panel">
+            <p class="trace-panel-label">ce qui tourne ici, en direct</p>
+            <svg class="trace-svg" viewBox="0 0 220 380" aria-label="Étapes du projet : profil, recherche, score, candidature">
+                <path class="trace-path" d="M40,40 L40,140 L40,240 L40,340"/>
+                <path class="trace-path-active" d="M40,40 L40,140 L40,240 L40,340"/>
+
+                <g class="trace-node">
+                    <circle class="trace-node-ring" cx="40" cy="40" r="8"/>
+                    <circle class="trace-node-dot" cx="40" cy="40" r="3"/>
+                    <text class="trace-node-label" x="58" y="36">Profil</text>
+                    <text class="trace-node-label" x="58" y="50" fill-opacity="0.5" font-size="9.5">local, non requis ici</text>
+                </g>
+
+                <g class="trace-node is-live">
+                    <circle class="trace-node-ring" cx="40" cy="140" r="8"/>
+                    <circle class="trace-node-dot" cx="40" cy="140" r="3"/>
+                    <text class="trace-node-label" x="58" y="136">Recherche</text>
+                    <text class="trace-node-label" x="58" y="150" fill-opacity="0.5" font-size="9.5">actif sur cette page</text>
+                </g>
+
+                <g class="trace-node">
+                    <circle class="trace-node-ring" cx="40" cy="240" r="8"/>
+                    <circle class="trace-node-dot" cx="40" cy="240" r="3"/>
+                    <text class="trace-node-label" x="58" y="236">Score</text>
+                    <text class="trace-node-label" x="58" y="250" fill-opacity="0.5" font-size="9.5">version locale</text>
+                </g>
+
+                <g class="trace-node">
+                    <circle class="trace-node-ring" cx="40" cy="340" r="8"/>
+                    <circle class="trace-node-dot" cx="40" cy="340" r="3"/>
+                    <text class="trace-node-label" x="58" y="336">Candidature</text>
+                    <text class="trace-node-label" x="58" y="350" fill-opacity="0.5" font-size="9.5">version locale</text>
+                </g>
+            </svg>
+        </div>
+    </section>
+
+    <section class="identity-section">
+        <div class="identity-card">
+            <div class="identity-avatar">AY</div>
+            <div>
+                <p class="identity-name">Adem Yehmed</p>
+                <p class="identity-role">Ingénieur en génie électrique — systèmes embarqués &amp; IA</p>
+                <p class="identity-bio">
+                    J'ai construit ce projet pour simplifier ma propre recherche d'emploi, puis je l'ai
+                    rendu public. Cette page est la partie que n'importe qui peut essayer sans rien
+                    installer ; le reste tourne chez vous, avec votre modèle et vos données.
+                </p>
+            </div>
+            <div class="identity-contact">
+                <a class="identity-mail" href="mailto:ademyehmed2018@gmail.com">ademyehmed2018@gmail.com</a>
+                <span class="identity-meta">Gabès, Tunisie</span>
+                <span class="identity-meta"><a href="https://github.com/AdemYehmed" target="_blank" rel="noopener noreferrer" style="color:inherit;">github.com/AdemYehmed</a></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="about-panel">
+            <h2>Ce que fait cette page</h2>
+            <p>
+                La recherche interroge LinkedIn et Indeed via <a href="https://github.com/speedyapply/JobSpy" target="_blank" rel="noopener noreferrer" style="color:var(--signal)">JobSpy</a>,
+                qui renvoie des résultats déjà structurés — titre, entreprise, lieu, date. Aucun texte
+                n'est envoyé à un modèle de langage, aucune donnée personnelle n'est demandée.
+            </p>
+            <p>
+                Le score de compatibilité, la génération d'email de candidature et le chat local
+                nécessitent un modèle de langage tournant sur votre machine — ils ne sont donc pas
+                disponibles ici, mais fonctionnent dans la version complète.
+            </p>
+        </div>
+
+        <div class="terminal">
+            <div class="terminal-head">
+                <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+            </div>
+            <div class="terminal-body">
+                <div><span class="comment"># obtenir la version complète, en local</span></div>
+                <div><span class="prompt">$</span> git clone https://github.com/AdemYehmed/local-job-agent.git</div>
+                <div><span class="prompt">$</span> cd local-job-agent</div>
+                <div><span class="comment"># voir README.md pour la suite (LLM local, envoi d'email...)</span></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="public-footer">
+        <span>MiniLLM — projet personnel, code source ouvert.</span>
+        <span>
+            <a href="mailto:ademyehmed2018@gmail.com">ademyehmed2018@gmail.com</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/AdemYehmed/local-job-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </span>
+    </footer>
+</body>
+</html>
