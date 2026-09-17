@@ -152,4 +152,4 @@ from app.smtp_test import test_smtp_connection
 
 @app.get("/api/test-smtp")
 async def test_smtp():
-    return test_smtp_connection()
+    return await test_smtp_connection()
