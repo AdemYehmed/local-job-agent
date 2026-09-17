@@ -20,7 +20,7 @@ Aucune donnée personnelle n'est envoyée à un tiers, à l'exception de la gén
 ### 1. Cloner le dépôt
 
 ```bash
-git clone <url-du-depot> ~/llm_project
+git clone https://github.com/AdemYehmed/local-job-agent ~/llm_project
 cd ~/llm_project
 ```
 
