@@ -1,7 +1,7 @@
 // Remplacez par l'URL de votre backend une fois déployé (ex: https://votre-backend.onrender.com)
 const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:8000"
-    : "https://REMPLACEZ-PAR-VOTRE-BACKEND.onrender.com";
+    : "https://local-job-agent.onrender.com";
 
 const keywordsEl = document.getElementById("job-keywords");
 const regionEl = document.getElementById("job-region");
