@@ -1,5 +1,18 @@
 import re
 from jobspy import scrape_jobs
+from jobspy.model import Country
+
+# PATCH : la librairie JobSpy ne reconnaît pas certains pays (ex: Tunisie) et plante.
+# On rend from_string tolérante : renvoie None au lieu de lever une exception.
+_original_from_string = Country.from_string.__func__
+
+def _patched_from_string(cls, country_str: str):
+    try:
+        return _original_from_string(cls, country_str)
+    except ValueError:
+        return None
+
+Country.from_string = classmethod(_patched_from_string)
 
 JOBSPY_LOCATION_MAP = {
     "tunisie": "Tunisia",
@@ -56,11 +69,9 @@ def search_via_jobspy(
 
     try:
         jobs_df = scrape_jobs(**kwargs)
-    except Exception as e:
-        print(f"[DEBUG jobspy_search] kwargs={kwargs} -> erreur: {type(e).__name__}: {e}")
+    except Exception:
         return []
 
-    print(f"[DEBUG jobspy_search] kwargs={kwargs} -> jobs_df is None: {jobs_df is None}, empty: {jobs_df.empty if jobs_df is not None else 'N/A'}")
     if jobs_df is None or jobs_df.empty:
         return []
 
