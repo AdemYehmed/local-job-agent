@@ -56,7 +56,8 @@ def search_via_jobspy(
 
     try:
         jobs_df = scrape_jobs(**kwargs)
-    except Exception:
+    except Exception as e:
+        print(f"[DEBUG jobspy_search] kwargs={kwargs} -> erreur: {type(e).__name__}: {e}")
         return []
 
     if jobs_df is None or jobs_df.empty:
