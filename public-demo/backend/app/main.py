@@ -146,3 +146,10 @@ async def get_alert_config():
 @app.get("/api/alert-status")
 async def get_alert_status():
     return _alert_load_status()
+
+
+from app.smtp_test import test_smtp_connection
+
+@app.get("/api/test-smtp")
+async def test_smtp():
+    return test_smtp_connection()
