@@ -66,8 +66,17 @@ def _save_seen(seen: set) -> None:
 def _send_alert_email(smtp_user: str, smtp_password: str, to_email: str, keywords: str, new_jobs: list[dict]) -> None:
     lines = []
     for job in new_jobs:
-        lines.append(f"- {job.get('title','')} — {job.get('company','')} ({job.get('location','')})\n  {job.get('url','')}")
-    body = f"Nouvelles offres pour « {keywords} » :\n\n" + "\n\n".join(lines)
+        description = job.get("description", "").strip()
+        block = (
+            f"— {job.get('title','')} chez {job.get('company','') or 'entreprise non précisée'}\n"
+            f"Lieu : {job.get('location','') or 'non précisé'}\n"
+            f"Lien : {job.get('url','')}"
+        )
+        if description:
+            block += f"\n\nDescription :\n{description}"
+        lines.append(block)
+    separator = "\n" + ("-" * 40) + "\n\n"
+    body = f"Nouvelles offres pour « {keywords} » :\n\n" + separator.join(lines)
 
     msg = MIMEMultipart()
     msg["From"] = smtp_user
@@ -85,6 +94,8 @@ async def _run_one_check(config: dict, smtp_user: str, smtp_password: str) -> No
     seen = _load_seen()
 
     all_offers = []
+    seen_this_run_keys = set()
+
     for source in config.get("sources", ["linkedin"]):
         if source not in ("linkedin", "indeed"):
             continue
@@ -97,7 +108,12 @@ async def _run_one_check(config: dict, smtp_user: str, smtp_password: str) -> No
                 experience_label=config.get("experience", "tout"),
                 results_wanted=8,
             )
-            all_offers.extend(offers)
+            for o in offers:
+                dedup_key = (o.get("title", "").strip().lower(), o.get("company", "").strip().lower())
+                if dedup_key in seen_this_run_keys:
+                    continue
+                seen_this_run_keys.add(dedup_key)
+                all_offers.append(o)
 
     new_jobs = [o for o in all_offers if o.get("url") and o["url"] not in seen]
 

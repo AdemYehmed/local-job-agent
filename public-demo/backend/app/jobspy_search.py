@@ -92,13 +92,15 @@ def search_via_jobspy(
             skills.append(job_type)
 
         emails = clean(row.get("emails"))
+        description = clean(row.get("description"))
         if not emails:
-            description = clean(row.get("description"))
             email_match = EMAIL_REGEX.search(description)
             emails = email_match.group(0) if email_match else ""
         elif "[" in emails:
             match = EMAIL_REGEX.search(emails)
             emails = match.group(0) if match else ""
+
+        description_short = description[:600] if description else ""
 
         offers.append({
             "title": clean(row.get("title")),
@@ -109,6 +111,7 @@ def search_via_jobspy(
             "application_method": "email" if emails else "lien",
             "url": clean(row.get("job_url")),
             "date_hint": clean(row.get("date_posted")),
+            "description": description_short,
         })
 
     return offers
