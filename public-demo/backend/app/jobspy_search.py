@@ -25,7 +25,7 @@ JOBSPY_LOCATION_MAP = {
 
 TIMELIMIT_TO_HOURS = {
     "hour":1,
-    "3 hour":3,
+    "3_hour":3,
     "jour": 24,
     "semaine": 168,
     "mois": 720,
@@ -49,7 +49,7 @@ def search_via_jobspy(
     region_label: str = "monde",
     timelimit_label: str = "tout",
     experience_label: str = "tout",
-    results_wanted: int = 8,
+    results_wanted: int = 15,
 ) -> list[dict]:
     location = JOBSPY_LOCATION_MAP.get(region_label.lower(), region_label)
     hours_old = TIMELIMIT_TO_HOURS.get(timelimit_label.lower())
