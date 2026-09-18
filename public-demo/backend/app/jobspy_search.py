@@ -24,6 +24,8 @@ JOBSPY_LOCATION_MAP = {
 }
 
 TIMELIMIT_TO_HOURS = {
+    "hour":1,
+    "3 hour":3,
     "jour": 24,
     "semaine": 168,
     "mois": 720,
