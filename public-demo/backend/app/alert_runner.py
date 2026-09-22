@@ -8,18 +8,21 @@ import httpx
 import psycopg2
 
 from app.jobspy_search import search_via_jobspy
+from app.cv_matcher import calculate_cv_match
 
 
 # ============================================================
-# CONFIGURATION
+# CONFIG
 # ============================================================
 
-CHECK_INTERVAL_SECONDS = 120  # Check every 2 minutes
+CHECK_INTERVAL_SECONDS = 120
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+CV_SCORE_THRESHOLD = 4.0
 
 
 # ============================================================
@@ -27,11 +30,6 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 # ============================================================
 
 def get_db_connection():
-    """
-    Create a PostgreSQL connection.
-    DATABASE_URL should come from Render environment variables.
-    """
-
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured")
 
@@ -39,20 +37,181 @@ def get_db_connection():
 
 
 # ============================================================
-# ALERT CONFIGURATION
+# TELEGRAM
 # ============================================================
 
-def load_config() -> dict | None:
+async def send_telegram_message(message: str) -> bool:
     """
-    Load the current alert configuration from PostgreSQL.
+    Send a message to Telegram.
+
+    Returns:
+        True  -> success
+        False -> failure
+    """
+
+    if not TELEGRAM_BOT_TOKEN:
+        print("Telegram error: TELEGRAM_BOT_TOKEN is missing")
+        return False
+
+    if not TELEGRAM_CHAT_ID:
+        print("Telegram error: TELEGRAM_CHAT_ID is missing")
+        return False
+
+    url = (
+        f"https://api.telegram.org/"
+        f"bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    )
+
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": False,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(url, json=payload)
+
+        if response.status_code == 200:
+            print("Telegram message sent successfully.")
+            return True
+
+        print(
+            f"Telegram error: HTTP {response.status_code} "
+            f"{response.text}"
+        )
+
+        return False
+
+    except Exception as e:
+        print(f"Telegram exception: {e}")
+        return False
+
+
+# ============================================================
+# TELEGRAM MESSAGE
+# ============================================================
+
+def build_telegram_message(keywords, new_jobs):
+    """
+    Build Telegram message containing only NEW relevant jobs.
+    """
+
+    lines = []
+
+    lines.append("🚨 <b>New Job Alert</b>")
+    lines.append("")
+    lines.append(
+        f"🔎 <b>Keywords:</b> {html.escape(str(keywords))}"
+    )
+    lines.append(
+        f"📊 <b>New jobs:</b> {len(new_jobs)}"
+    )
+    lines.append("")
+
+    for index, job in enumerate(new_jobs, start=1):
+
+        title = html.escape(
+            str(job.get("title") or "Unknown title")
+        )
+
+        company = html.escape(
+            str(job.get("company") or "Unknown company")
+        )
+
+        location = html.escape(
+            str(job.get("location") or "Unknown location")
+        )
+
+        source = html.escape(
+            str(job.get("source") or "Unknown")
+        )
+
+        url = str(job.get("url") or "").strip()
+
+        score = job.get("match_score")
+
+        try:
+            score_text = f"{float(score):.1f}/10"
+        except Exception:
+            score_text = "N/A"
+
+        matched_keywords = job.get(
+            "matched_keywords",
+            []
+        )
+
+        if isinstance(matched_keywords, str):
+            try:
+                matched_keywords = json.loads(
+                    matched_keywords
+                )
+            except Exception:
+                matched_keywords = [matched_keywords]
+
+        if matched_keywords:
+            keywords_text = ", ".join(
+                str(x) for x in matched_keywords
+            )
+        else:
+            keywords_text = "None"
+
+        lines.append(
+            f"💼 <b>{index}. {title}</b>"
+        )
+
+        lines.append(
+            f"🏢 {company}"
+        )
+
+        lines.append(
+            f"📍 {location}"
+        )
+
+        lines.append(
+            f"🌐 {source}"
+        )
+
+        lines.append(
+            f"🎯 <b>CV Match:</b> {score_text}"
+        )
+
+        lines.append(
+            f"🔑 <b>Matched:</b> "
+            f"{html.escape(keywords_text)}"
+        )
+
+        if url:
+            safe_url = html.escape(
+                url,
+                quote=True
+            )
+
+            lines.append(
+                f'🔗 <a href="{safe_url}">View job</a>'
+            )
+
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+# ============================================================
+# LOAD ALERT CONFIG
+# ============================================================
+
+def load_config():
+    """
+    Load alert configuration from PostgreSQL.
     """
 
     conn = get_db_connection()
 
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor() as cur:
 
-            cursor.execute(
+            cur.execute(
                 """
                 SELECT
                     keywords,
@@ -69,60 +228,117 @@ def load_config() -> dict | None:
                 """
             )
 
-            row = cursor.fetchone()
+            row = cur.fetchone()
 
             if not row:
-                return None
+                return {
+                    "keywords": "",
+                    "country": "monde",
+                    "sources": ["linkedin"],
+                    "timelimit": "mois",
+                    "experience": "tout",
+                    "interval_hours": 1,
+                    "active": False,
+                    "last_run": None,
+                    "last_new_count": 0,
+                }
+
+            (
+                keywords,
+                country,
+                sources,
+                timelimit,
+                experience,
+                interval_hours,
+                active,
+                last_run,
+                last_new_count,
+            ) = row
+
+            if isinstance(sources, str):
+                try:
+                    sources = json.loads(sources)
+                except Exception:
+                    sources = ["linkedin"]
 
             return {
-                "keywords": row[0],
-                "region": row[1],
-                "sources": row[2],
-                "timelimit": row[3],
-                "experience": row[4],
-                "interval_hours": float(row[5]),
-                "active": row[6],
-                "last_run": row[7].isoformat() if row[7] else None,
-                "last_new_count": row[8] or 0,
+                "keywords": keywords or "",
+                "country": country or "monde",
+                "sources": sources or ["linkedin"],
+                "timelimit": timelimit or "mois",
+                "experience": experience or "tout",
+                "interval_hours": float(
+                    interval_hours or 1
+                ),
+                "active": bool(active),
+                "last_run": last_run,
+                "last_new_count": int(
+                    last_new_count or 0
+                ),
             }
 
     finally:
         conn.close()
 
 
-def save_config(config: dict) -> None:
+# ============================================================
+# SAVE ALERT CONFIG
+# ============================================================
+
+def save_config(config):
     """
-    Save/update the alert configuration in PostgreSQL.
+    Save alert configuration to PostgreSQL.
     """
 
     conn = get_db_connection()
 
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor() as cur:
 
-            cursor.execute(
+            sources = config.get(
+                "sources",
+                ["linkedin"]
+            )
+
+            cur.execute(
                 """
-                UPDATE alert_config
-                SET
-                    keywords = %s,
-                    country = %s,
-                    sources = %s::jsonb,
-                    timelimit = %s,
-                    experience = %s,
-                    interval_hours = %s,
-                    active = %s,
+                INSERT INTO alert_config (
+                    id,
+                    keywords,
+                    country,
+                    sources,
+                    timelimit,
+                    experience,
+                    interval_hours,
+                    active,
+                    updated_at
+                )
+                VALUES (
+                    1,
+                    %s,
+                    %s,
+                    %s::jsonb,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    NOW()
+                )
+                ON CONFLICT (id)
+                DO UPDATE SET
+                    keywords = EXCLUDED.keywords,
+                    country = EXCLUDED.country,
+                    sources = EXCLUDED.sources,
+                    timelimit = EXCLUDED.timelimit,
+                    experience = EXCLUDED.experience,
+                    interval_hours = EXCLUDED.interval_hours,
+                    active = EXCLUDED.active,
                     updated_at = NOW()
-                WHERE id = 1
                 """,
                 (
                     config.get("keywords", ""),
-                    config.get("region", "monde"),
-                    json.dumps(
-                        config.get(
-                            "sources",
-                            ["linkedin"]
-                        )
-                    ),
+                    config.get("country", "monde"),
+                    json.dumps(sources),
                     config.get("timelimit", "mois"),
                     config.get("experience", "tout"),
                     float(
@@ -137,30 +353,30 @@ def save_config(config: dict) -> None:
                             False
                         )
                     ),
-                )
+                ),
             )
 
         conn.commit()
-
-    except Exception:
-        conn.rollback()
-        raise
 
     finally:
         conn.close()
 
 
-def update_alert_status(new_count: int) -> None:
+# ============================================================
+# UPDATE ALERT STATUS
+# ============================================================
+
+def update_alert_status(new_count):
     """
-    Update the last execution information.
+    Update last execution information.
     """
 
     conn = get_db_connection()
 
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor() as cur:
 
-            cursor.execute(
+            cur.execute(
                 """
                 UPDATE alert_config
                 SET
@@ -169,128 +385,178 @@ def update_alert_status(new_count: int) -> None:
                     updated_at = NOW()
                 WHERE id = 1
                 """,
-                (new_count,)
+                (int(new_count),),
             )
 
         conn.commit()
-
-    except Exception:
-        conn.rollback()
-        raise
 
     finally:
         conn.close()
 
 
 # ============================================================
-# JOB DATABASE
+# SAVE JOBS
 # ============================================================
 
-def save_new_jobs(jobs: list[dict]) -> list[dict]:
+def save_new_jobs(jobs):
     """
-    Save jobs into PostgreSQL.
+    Save relevant jobs into PostgreSQL.
 
-    Returns ONLY jobs that did not exist previously.
+    A job is considered NEW when its URL does not already exist.
 
-    The URL is used as the unique identifier.
+    Existing jobs:
+        last_seen_at is updated.
+
+    New jobs:
+        inserted and returned.
+
+    Returns:
+        list containing ONLY newly inserted jobs.
     """
 
-    new_jobs = []
+    if not jobs:
+        return []
 
     conn = get_db_connection()
 
-    try:
+    new_jobs = []
 
-        with conn.cursor() as cursor:
+    try:
+        with conn.cursor() as cur:
 
             for job in jobs:
 
-                url = (job.get("url") or "").strip()
+                url = str(
+                    job.get("url") or ""
+                ).strip()
 
                 if not url:
                     continue
 
+                title = job.get(
+                    "title",
+                    ""
+                )
+
+                company = job.get(
+                    "company",
+                    ""
+                )
+
+                location = job.get(
+                    "location",
+                    ""
+                )
+
+                description = job.get(
+                    "description",
+                    ""
+                )
+
+                source = job.get(
+                    "source",
+                    ""
+                )
+
+                match_score = job.get(
+                    "match_score"
+                )
+
+                matched_keywords = job.get(
+                    "matched_keywords",
+                    []
+                )
+
                 # ------------------------------------------------
-                # Check if job already exists
+                # Check if URL already exists
                 # ------------------------------------------------
 
-                cursor.execute(
+                cur.execute(
                     """
                     SELECT id
                     FROM jobs
                     WHERE url = %s
                     """,
-                    (url,)
+                    (url,),
                 )
 
-                existing = cursor.fetchone()
-
-                # ------------------------------------------------
-                # OLD JOB
-                # ------------------------------------------------
+                existing = cur.fetchone()
 
                 if existing:
 
-                    cursor.execute(
+                    # Existing job:
+                    # update last_seen_at and CV score.
+                    cur.execute(
                         """
                         UPDATE jobs
                         SET
                             last_seen_at = NOW(),
-                            title = COALESCE(%s, title),
-                            company = COALESCE(%s, company),
-                            location = COALESCE(%s, location),
-                            description = COALESCE(%s, description)
+                            match_score = %s,
+                            matched_keywords = %s::jsonb
                         WHERE url = %s
                         """,
                         (
-                            job.get("title"),
-                            job.get("company"),
-                            job.get("location"),
-                            job.get("description"),
+                            match_score,
+                            json.dumps(
+                                matched_keywords
+                            ),
                             url,
-                        )
+                        ),
                     )
 
+                    continue
+
                 # ------------------------------------------------
-                # NEW JOB
+                # New job
                 # ------------------------------------------------
 
-                else:
-
-                    cursor.execute(
-                        """
-                        INSERT INTO jobs (
-                            url,
-                            title,
-                            company,
-                            location,
-                            description,
-                            source,
-                            first_seen_at,
-                            last_seen_at
-                        )
-                        VALUES (
-                            %s,
-                            %s,
-                            %s,
-                            %s,
-                            %s,
-                            %s,
-                            NOW(),
-                            NOW()
-                        )
-                        """,
-                        (
-                            url,
-                            job.get("title", ""),
-                            job.get("company", ""),
-                            job.get("location", ""),
-                            job.get("description", ""),
-                            job.get("source", ""),
-                        )
+                cur.execute(
+                    """
+                    INSERT INTO jobs (
+                        url,
+                        title,
+                        company,
+                        location,
+                        description,
+                        source,
+                        match_score,
+                        matched_keywords,
+                        first_seen_at,
+                        last_seen_at
                     )
+                    VALUES (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s::jsonb,
+                        NOW(),
+                        NOW()
+                    )
+                    RETURNING id
+                    """,
+                    (
+                        url,
+                        title,
+                        company,
+                        location,
+                        description,
+                        source,
+                        match_score,
+                        json.dumps(
+                            matched_keywords
+                        ),
+                    ),
+                )
 
-                    new_jobs.append(job)
+                inserted_id = cur.fetchone()[0]
+
+                job["id"] = inserted_id
+
+                new_jobs.append(job)
 
         conn.commit()
 
@@ -304,299 +570,276 @@ def save_new_jobs(jobs: list[dict]) -> list[dict]:
     return new_jobs
 
 
-def get_total_jobs() -> int:
+# ============================================================
+# TOTAL JOBS
+# ============================================================
+
+def get_total_jobs():
     """
-    Return total number of jobs stored in PostgreSQL.
+    Return total number of jobs stored in DB.
     """
 
     conn = get_db_connection()
 
     try:
+        with conn.cursor() as cur:
 
-        with conn.cursor() as cursor:
-
-            cursor.execute(
+            cur.execute(
                 """
                 SELECT COUNT(*)
                 FROM jobs
                 """
             )
 
-            result = cursor.fetchone()
+            result = cur.fetchone()
 
-            return result[0] if result else 0
+            return int(result[0] or 0)
 
     finally:
         conn.close()
 
 
 # ============================================================
-# TELEGRAM
+# ONE ALERT CHECK
 # ============================================================
 
-async def send_telegram_message(message: str) -> None:
+async def _run_one_check(config):
     """
-    Send a message through Telegram Bot API.
+    Perform one complete alert cycle:
+
+        1. Search jobs
+        2. Deduplicate current search
+        3. Calculate CV score
+        4. Reject irrelevant jobs
+        5. Save relevant jobs to PostgreSQL
+        6. Detect genuinely new jobs
+        7. Send only new jobs to Telegram
+        8. Update status
     """
 
-    if not TELEGRAM_BOT_TOKEN:
-        print("TELEGRAM_BOT_TOKEN is not configured")
+    keywords = str(
+        config.get("keywords") or ""
+    ).strip()
+
+    country = config.get(
+        "country",
+        "monde"
+    )
+
+    sources = config.get(
+        "sources",
+        ["linkedin"]
+    )
+
+    timelimit = config.get(
+        "timelimit",
+        "mois"
+    )
+
+    experience = config.get(
+        "experience",
+        "tout"
+    )
+
+    if not keywords:
+        print("Alert search skipped: no keywords.")
         return
 
-    if not TELEGRAM_CHAT_ID:
-        print("TELEGRAM_CHAT_ID is not configured")
-        return
+    if not sources:
+        sources = ["linkedin"]
 
-    telegram_url = (
-        f"https://api.telegram.org/"
-        f"bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    )
+    print("")
+    print("=" * 70)
+    print("STARTING JOB ALERT SEARCH")
+    print("=" * 70)
 
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": message,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": False,
-    }
-
-    async with httpx.AsyncClient(timeout=20) as client:
-
-        response = await client.post(
-            telegram_url,
-            json=payload
-        )
-
-        response.raise_for_status()
-
-
-# ============================================================
-# TELEGRAM MESSAGE
-# ============================================================
-
-def build_telegram_message(
-    keywords: str,
-    new_jobs: list[dict]
-) -> str:
-    """
-    Build Telegram message containing only new jobs.
-    """
-
-    lines = [
-        f"🔔 <b>{len(new_jobs)} nouvelle(s) offre(s)</b>",
-        f"🔎 Recherche : <b>{html.escape(keywords)}</b>",
-        ""
-    ]
-
-    for index, job in enumerate(new_jobs, start=1):
-
-        title = html.escape(
-            job.get("title", "Sans titre") or "Sans titre"
-        )
-
-        company = html.escape(
-            job.get("company", "Entreprise inconnue")
-            or "Entreprise inconnue"
-        )
-
-        location = html.escape(
-            job.get("location", "Non précisé")
-            or "Non précisé"
-        )
-
-        source = html.escape(
-            job.get("source", "")
-            or ""
-        )
-
-        url = job.get("url", "")
-
-        lines.append(
-            f"<b>{index}. 💼 {title}</b>\n"
-            f"🏢 {company}\n"
-            f"📍 {location}\n"
-            f"🌐 {source}\n"
-            f"🔗 {url}\n"
-        )
-
-    return "\n".join(lines)
-
-
-# ============================================================
-# RUN ONE SEARCH
-# ============================================================
-
-async def _run_one_check(config: dict) -> None:
-    """
-    Perform one complete job search.
-
-    1. Search LinkedIn / Indeed
-    2. Deduplicate jobs found during this run
-    3. Compare jobs with PostgreSQL
-    4. Save new jobs
-    5. Send only new jobs to Telegram
-    6. Save execution status
-    """
-
-    print("========================================")
-    print("Starting job alert check")
-    print("========================================")
-
-    print(
-        f"Keywords: {config.get('keywords')}"
-    )
-
-    print(
-        f"Country: {config.get('region')}"
-    )
-
-    print(
-        f"Sources: {config.get('sources')}"
-    )
-
-    all_offers = []
-
-    # Prevent duplicates during the SAME search
-    seen_this_run_keys = set()
+    print(f"Keywords   : {keywords}")
+    print(f"Country    : {country}")
+    print(f"Sources    : {sources}")
+    print(f"Timelimit  : {timelimit}")
+    print(f"Experience : {experience}")
+    print("=" * 70)
 
     # ========================================================
     # SEARCH
     # ========================================================
 
-    for source in config.get(
-        "sources",
-        ["linkedin"]
-    ):
+    all_offers = []
 
-        if source not in (
-            "linkedin",
-            "indeed"
-        ):
-            continue
+    for source in sources:
 
-        keywords = [
-            k.strip()
-            for k in config.get(
-                "keywords",
-                ""
-            ).split("+")
-            if k.strip()
-        ]
-
-        for keyword in keywords:
+        try:
 
             print(
-                f"Searching {source}: {keyword}"
+                f"Searching source: {source}"
             )
 
-            try:
-
-                offers = search_via_jobspy(
-                    keywords=keyword,
-                    site=source,
-                    region_label=config.get(
-                        "region",
-                        "monde"
-                    ),
-                    timelimit_label=config.get(
-                        "timelimit",
-                        "mois"
-                    ),
-                    experience_label=config.get(
-                        "experience",
-                        "tout"
-                    ),
-                    results_wanted=8,
-                )
-
-            except Exception as e:
-
-                print(
-                    f"Search error "
-                    f"({source}, {keyword}): {e}"
-                )
-
-                continue
+            offers = search_via_jobspy(
+                keywords=keywords,
+                country=country,
+                sources=[source],
+                timelimit=timelimit,
+                experience=experience,
+            )
 
             if not offers:
+                print(
+                    f"No jobs returned from {source}"
+                )
                 continue
+
+            print(
+                f"{len(offers)} jobs returned "
+                f"from {source}"
+            )
 
             for job in offers:
 
-                url = (
-                    job.get("url") or ""
-                ).strip()
-
-                title = (
-                    job.get("title") or ""
-                ).strip().lower()
-
-                company = (
-                    job.get("company") or ""
-                ).strip().lower()
-
-                # ------------------------------------------------
-                # Skip jobs without URL
-                # ------------------------------------------------
-
-                if not url:
+                if not isinstance(job, dict):
                     continue
-
-                # ------------------------------------------------
-                # Deduplication during current run
-                # ------------------------------------------------
-
-                dedup_key = (
-                    url
-                    or f"{title}|{company}"
-                )
-
-                if dedup_key in seen_this_run_keys:
-                    continue
-
-                seen_this_run_keys.add(
-                    dedup_key
-                )
 
                 job["source"] = source
 
                 all_offers.append(job)
 
+        except Exception as e:
+
+            print(
+                f"Search error for {source}: {e}"
+            )
+
+    print("")
     print(
-        f"Jobs found this run: "
-        f"{len(all_offers)}"
+        f"Total raw jobs: {len(all_offers)}"
     )
 
     # ========================================================
-    # DATABASE
+    # DEDUPLICATE CURRENT SEARCH
     # ========================================================
 
-    if not all_offers:
+    unique_jobs = []
+    seen_urls = set()
 
-        update_alert_status(0)
+    for job in all_offers:
 
-        print("No jobs found.")
+        url = str(
+            job.get("url") or ""
+        ).strip()
 
-        return
+        if not url:
+            continue
+
+        if url in seen_urls:
+            continue
+
+        seen_urls.add(url)
+
+        unique_jobs.append(job)
+
+    print(
+        f"Unique jobs after URL deduplication: "
+        f"{len(unique_jobs)}"
+    )
+
+    # ========================================================
+    # CV MATCHING
+    # ========================================================
+
+    filtered_jobs = []
+
+    print("")
+    print("=" * 70)
+    print("CV MATCHING")
+    print("=" * 70)
+
+    for job in unique_jobs:
+
+        try:
+
+            match = calculate_cv_match(job)
+
+            score = float(
+                match.get(
+                    "score",
+                    0
+                )
+            )
+
+            matched_keywords = match.get(
+                "matched_keywords",
+                []
+            )
+
+            job["match_score"] = score
+
+            job["matched_keywords"] = (
+                matched_keywords
+            )
+
+            title = job.get(
+                "title",
+                ""
+            )
+
+            print(
+                f"{title} "
+                f"→ score={score:.1f}/10 "
+                f"keywords={matched_keywords}"
+            )
+
+            # ------------------------------------------------
+            # Threshold
+            # ------------------------------------------------
+
+            if score >= CV_SCORE_THRESHOLD:
+
+                filtered_jobs.append(job)
+
+                print(
+                    "  ✅ ACCEPTED"
+                )
+
+            else:
+
+                print(
+                    "  ❌ REJECTED"
+                )
+
+        except Exception as e:
+
+            print(
+                f"CV matching error for "
+                f"{job.get('title', '')}: {e}"
+            )
+
+    print("")
+    print(
+        f"Relevant jobs after CV filtering: "
+        f"{len(filtered_jobs)}"
+    )
+
+    # ========================================================
+    # SAVE TO DATABASE
+    # ========================================================
 
     try:
 
         new_jobs = save_new_jobs(
-            all_offers
+            filtered_jobs
         )
 
     except Exception as e:
 
         print(
-            f"Database error: {e}"
+            f"Database save error: {e}"
         )
 
-        # Do NOT update last_run here.
-        # This allows the system to retry
-        # the search later.
         return
 
+    print("")
     print(
-        f"New jobs: {len(new_jobs)}"
+        f"New jobs inserted into DB: "
+        f"{len(new_jobs)}"
     )
 
     # ========================================================
@@ -606,32 +849,18 @@ async def _run_one_check(config: dict) -> None:
     if new_jobs:
 
         message = build_telegram_message(
-            config.get(
-                "keywords",
-                ""
-            ),
+            keywords,
             new_jobs
         )
 
-        try:
-
-            await send_telegram_message(
-                message
-            )
-
-            print(
-                "Telegram notification sent."
-            )
-
-        except Exception as e:
-
-            print(
-                f"Telegram error: {e}"
-            )
+        await send_telegram_message(
+            message
+        )
 
     else:
-        await send_telegram_message("no job now")
 
+        # IMPORTANT:
+        # Do NOT send Telegram message here.
         print(
             "No new jobs. "
             "No Telegram message sent."
@@ -641,68 +870,189 @@ async def _run_one_check(config: dict) -> None:
     # STATUS
     # ========================================================
 
-    update_alert_status(
-        len(new_jobs)
-    )
+    try:
 
-    print(
-        f"Total jobs in database: "
-        f"{get_total_jobs()}"
-    )
+        update_alert_status(
+            len(new_jobs)
+        )
 
-    print("Job alert check finished.")
+    except Exception as e:
+
+        print(
+            f"Status update error: {e}"
+        )
+
+    # ========================================================
+    # TOTAL DB JOBS
+    # ========================================================
+
+    try:
+
+        total_jobs = get_total_jobs()
+
+        print(
+            f"Total relevant jobs in DB: "
+            f"{total_jobs}"
+        )
+
+    except Exception as e:
+
+        print(
+            f"Could not get total job count: {e}"
+        )
+
+    print("=" * 70)
+    print("JOB ALERT SEARCH FINISHED")
+    print("=" * 70)
+    print("")
 
 
 # ============================================================
-# ALERT LOOP
+# BACKGROUND ALERT LOOP
 # ============================================================
 
 async def alert_loop():
-    print("Job alert loop started.")
+    """
+    Permanent background loop.
+
+    It wakes every 120 seconds and checks PostgreSQL
+    to determine whether another search is due.
+
+    Example:
+
+        interval_hours = 1
+        -> approximately every 1 hour
+
+        interval_hours = 0.5
+        -> approximately every 30 minutes
+
+        interval_hours = 2
+        -> approximately every 2 hours
+    """
+
+    print(
+        "Job alert loop started."
+    )
 
     while True:
+
         try:
+
             config = load_config()
 
+            # ==================================================
+            # ALERT DISABLED
+            # ==================================================
+
             if not config.get("active"):
-                await asyncio.sleep(120)
+
+                print(
+                    "Alert system is inactive."
+                )
+
+                await asyncio.sleep(
+                    CHECK_INTERVAL_SECONDS
+                )
+
                 continue
 
-            interval_hours = float(config.get("interval_hours", 1))
+            # ==================================================
+            # INTERVAL
+            # ==================================================
 
-            last_run = config.get("last_run")
+            interval_hours = float(
+                config.get(
+                    "interval_hours",
+                    1
+                )
+            )
+
+            if interval_hours <= 0:
+
+                interval_hours = 1
+
+            # ==================================================
+            # LAST RUN
+            # ==================================================
+
+            last_run = config.get(
+                "last_run"
+            )
 
             now = datetime.now()
 
             should_run = False
 
+            # First run
             if last_run is None:
-                should_run = True
-            else:
-                if isinstance(last_run, str):
-                    last_run = datetime.fromisoformat(last_run)
 
-                # Handle timezone-aware PostgreSQL timestamps
-                if last_run.tzinfo is not None:
-                    now = datetime.now(last_run.tzinfo)
+                should_run = True
+
+            else:
+
+                if isinstance(
+                    last_run,
+                    str
+                ):
+
+                    last_run = (
+                        datetime.fromisoformat(
+                            last_run
+                        )
+                    )
+
+                # Handle timezone-aware DB timestamps
+                if (
+                    last_run.tzinfo
+                    is not None
+                ):
+
+                    now = datetime.now(
+                        last_run.tzinfo
+                    )
 
                 elapsed_hours = (
                     now - last_run
                 ).total_seconds() / 3600
 
-                if elapsed_hours >= interval_hours:
+                if (
+                    elapsed_hours
+                    >= interval_hours
+                ):
+
                     should_run = True
 
+            # ==================================================
+            # RUN SEARCH
+            # ==================================================
+
             if should_run:
+
                 print(
                     f"Running alert search "
                     f"(interval={interval_hours}h)"
                 )
 
-                await _run_one_check(config)
+                await _run_one_check(
+                    config
+                )
+
+            else:
+
+                print(
+                    "Alert search not due yet."
+                )
 
         except Exception as e:
-            print(f"Alert loop error: {e}")
 
-        # Check the database again in 2 minutes
-        await asyncio.sleep(120)
+            print(
+                f"Alert loop error: {e}"
+            )
+
+        # ======================================================
+        # WAIT
+        # ======================================================
+
+        await asyncio.sleep(
+            CHECK_INTERVAL_SECONDS
+        )
