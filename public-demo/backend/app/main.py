@@ -325,7 +325,11 @@ async def get_alert_status():
 async def _start_background_alert():
     asyncio.create_task(alert_loop())
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
+    
 @app.get("/api/test-telegram")
 async def test_telegram():
 

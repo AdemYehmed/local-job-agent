@@ -30,6 +30,12 @@ CV_SCORE_THRESHOLD = 4.0
 # DATABASE
 # ============================================================
 
+
+async def health():
+    print("i m not die")
+    
+
+
 def get_db_connection():
     """
     Connect to PostgreSQL / Supabase.
@@ -1329,4 +1335,3 @@ async def alert_loop():
         await asyncio.sleep(
             CHECK_INTERVAL_SECONDS
         )
-        
