@@ -3,3 +3,4 @@ uvicorn[standard]==0.30.6
 python-jobspy
 pandas
 httpx
+psycopg2-binary
