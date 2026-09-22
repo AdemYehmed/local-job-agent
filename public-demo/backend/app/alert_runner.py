@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import html
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import httpx
 import psycopg2
@@ -22,11 +22,12 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+# Minimum CV score required to keep a job
 CV_SCORE_THRESHOLD = 4.0
 
 
 # ============================================================
-# DATABASE
+# DATABASE CONNECTION
 # ============================================================
 
 def get_db_connection():
@@ -40,15 +41,7 @@ def get_db_connection():
 # TELEGRAM
 # ============================================================
 
-async def send_telegram_message(message: str) -> bool:
-    """
-    Send a message to Telegram.
-
-    Returns:
-        True  -> success
-        False -> failure
-    """
-
+async def send_telegram_message(message: str):
     if not TELEGRAM_BOT_TOKEN:
         print("Telegram error: TELEGRAM_BOT_TOKEN is missing")
         return False
@@ -71,14 +64,18 @@ async def send_telegram_message(message: str) -> bool:
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(url, json=payload)
+            response = await client.post(
+                url,
+                json=payload
+            )
 
         if response.status_code == 200:
             print("Telegram message sent successfully.")
             return True
 
         print(
-            f"Telegram error: HTTP {response.status_code} "
+            f"Telegram error: "
+            f"HTTP {response.status_code} "
             f"{response.text}"
         )
 
@@ -94,16 +91,13 @@ async def send_telegram_message(message: str) -> bool:
 # ============================================================
 
 def build_telegram_message(keywords, new_jobs):
-    """
-    Build Telegram message containing only NEW relevant jobs.
-    """
-
     lines = []
 
     lines.append("🚨 <b>New Job Alert</b>")
     lines.append("")
     lines.append(
-        f"🔎 <b>Keywords:</b> {html.escape(str(keywords))}"
+        f"🔎 <b>Keywords:</b> "
+        f"{html.escape(str(keywords))}"
     )
     lines.append(
         f"📊 <b>New jobs:</b> {len(new_jobs)}"
@@ -128,7 +122,13 @@ def build_telegram_message(keywords, new_jobs):
             str(job.get("source") or "Unknown")
         )
 
-        url = str(job.get("url") or "").strip()
+        url = str(
+            job.get("url") or ""
+        ).strip()
+
+        # ----------------------------------------------------
+        # CV SCORE
+        # ----------------------------------------------------
 
         score = job.get("match_score")
 
@@ -136,6 +136,10 @@ def build_telegram_message(keywords, new_jobs):
             score_text = f"{float(score):.1f}/10"
         except Exception:
             score_text = "N/A"
+
+        # ----------------------------------------------------
+        # MATCHED KEYWORDS
+        # ----------------------------------------------------
 
         matched_keywords = job.get(
             "matched_keywords",
@@ -148,14 +152,21 @@ def build_telegram_message(keywords, new_jobs):
                     matched_keywords
                 )
             except Exception:
-                matched_keywords = [matched_keywords]
+                matched_keywords = [
+                    matched_keywords
+                ]
 
         if matched_keywords:
             keywords_text = ", ".join(
-                str(x) for x in matched_keywords
+                str(x)
+                for x in matched_keywords
             )
         else:
             keywords_text = "None"
+
+        # ----------------------------------------------------
+        # MESSAGE
+        # ----------------------------------------------------
 
         lines.append(
             f"💼 <b>{index}. {title}</b>"
@@ -189,7 +200,9 @@ def build_telegram_message(keywords, new_jobs):
             )
 
             lines.append(
-                f'🔗 <a href="{safe_url}">View job</a>'
+                f'🔗 <a href="{safe_url}">'
+                f"View job"
+                f"</a>"
             )
 
         lines.append("")
@@ -202,13 +215,11 @@ def build_telegram_message(keywords, new_jobs):
 # ============================================================
 
 def load_config():
-    """
-    Load alert configuration from PostgreSQL.
-    """
 
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cur:
 
             cur.execute(
@@ -231,6 +242,7 @@ def load_config():
             row = cur.fetchone()
 
             if not row:
+
                 return {
                     "keywords": "",
                     "country": "monde",
@@ -256,8 +268,10 @@ def load_config():
             ) = row
 
             if isinstance(sources, str):
+
                 try:
                     sources = json.loads(sources)
+
                 except Exception:
                     sources = ["linkedin"]
 
@@ -278,6 +292,7 @@ def load_config():
             }
 
     finally:
+
         conn.close()
 
 
@@ -286,13 +301,11 @@ def load_config():
 # ============================================================
 
 def save_config(config):
-    """
-    Save alert configuration to PostgreSQL.
-    """
 
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cur:
 
             sources = config.get(
@@ -336,29 +349,48 @@ def save_config(config):
                     updated_at = NOW()
                 """,
                 (
-                    config.get("keywords", ""),
-                    config.get("country", "monde"),
+                    config.get(
+                        "keywords",
+                        ""
+                    ),
+
+                    config.get(
+                        "country",
+                        "monde"
+                    ),
+
                     json.dumps(sources),
-                    config.get("timelimit", "mois"),
-                    config.get("experience", "tout"),
+
+                    config.get(
+                        "timelimit",
+                        "mois"
+                    ),
+
+                    config.get(
+                        "experience",
+                        "tout"
+                    ),
+
                     float(
                         config.get(
                             "interval_hours",
                             1
                         )
                     ),
+
                     bool(
                         config.get(
                             "active",
                             False
                         )
                     ),
-                ),
+                )
             )
 
         conn.commit()
 
     finally:
+
         conn.close()
 
 
@@ -367,13 +399,11 @@ def save_config(config):
 # ============================================================
 
 def update_alert_status(new_count):
-    """
-    Update last execution information.
-    """
 
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cur:
 
             cur.execute(
@@ -385,33 +415,34 @@ def update_alert_status(new_count):
                     updated_at = NOW()
                 WHERE id = 1
                 """,
-                (int(new_count),),
+                (
+                    int(new_count),
+                )
             )
 
         conn.commit()
 
     finally:
+
         conn.close()
 
 
 # ============================================================
-# SAVE JOBS
+# SAVE NEW JOBS
 # ============================================================
 
 def save_new_jobs(jobs):
     """
     Save relevant jobs into PostgreSQL.
 
-    A job is considered NEW when its URL does not already exist.
+    URL is used as the unique identifier.
 
-    Existing jobs:
-        last_seen_at is updated.
+    Existing job:
+        update last_seen_at
 
-    New jobs:
-        inserted and returned.
-
-    Returns:
-        list containing ONLY newly inserted jobs.
+    New job:
+        insert into database
+        return it for Telegram
     """
 
     if not jobs:
@@ -422,6 +453,7 @@ def save_new_jobs(jobs):
     new_jobs = []
 
     try:
+
         with conn.cursor() as cur:
 
             for job in jobs:
@@ -467,9 +499,9 @@ def save_new_jobs(jobs):
                     []
                 )
 
-                # ------------------------------------------------
-                # Check if URL already exists
-                # ------------------------------------------------
+                # ==================================================
+                # CHECK EXISTING JOB
+                # ==================================================
 
                 cur.execute(
                     """
@@ -477,15 +509,17 @@ def save_new_jobs(jobs):
                     FROM jobs
                     WHERE url = %s
                     """,
-                    (url,),
+                    (url,)
                 )
 
                 existing = cur.fetchone()
 
                 if existing:
 
-                    # Existing job:
-                    # update last_seen_at and CV score.
+                    # ----------------------------------------------
+                    # Existing job
+                    # ----------------------------------------------
+
                     cur.execute(
                         """
                         UPDATE jobs
@@ -501,14 +535,14 @@ def save_new_jobs(jobs):
                                 matched_keywords
                             ),
                             url,
-                        ),
+                        )
                     )
 
                     continue
 
-                # ------------------------------------------------
-                # New job
-                # ------------------------------------------------
+                # ==================================================
+                # NEW JOB
+                # ==================================================
 
                 cur.execute(
                     """
@@ -549,7 +583,7 @@ def save_new_jobs(jobs):
                         json.dumps(
                             matched_keywords
                         ),
-                    ),
+                    )
                 )
 
                 inserted_id = cur.fetchone()[0]
@@ -561,27 +595,27 @@ def save_new_jobs(jobs):
         conn.commit()
 
     except Exception:
+
         conn.rollback()
         raise
 
     finally:
+
         conn.close()
 
     return new_jobs
 
 
 # ============================================================
-# TOTAL JOBS
+# TOTAL JOB COUNT
 # ============================================================
 
 def get_total_jobs():
-    """
-    Return total number of jobs stored in DB.
-    """
 
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cur:
 
             cur.execute(
@@ -591,31 +625,22 @@ def get_total_jobs():
                 """
             )
 
-            result = cur.fetchone()
+            row = cur.fetchone()
 
-            return int(result[0] or 0)
+            return int(
+                row[0] or 0
+            )
 
     finally:
+
         conn.close()
 
 
 # ============================================================
-# ONE ALERT CHECK
+# ONE ALERT SEARCH
 # ============================================================
 
 async def _run_one_check(config):
-    """
-    Perform one complete alert cycle:
-
-        1. Search jobs
-        2. Deduplicate current search
-        3. Calculate CV score
-        4. Reject irrelevant jobs
-        5. Save relevant jobs to PostgreSQL
-        6. Detect genuinely new jobs
-        7. Send only new jobs to Telegram
-        8. Update status
-    """
 
     keywords = str(
         config.get("keywords") or ""
@@ -642,29 +667,61 @@ async def _run_one_check(config):
     )
 
     if not keywords:
-        print("Alert search skipped: no keywords.")
+
+        print(
+            "Alert search skipped: "
+            "no keywords."
+        )
+
         return
 
     if not sources:
+
         sources = ["linkedin"]
+
+    # ========================================================
+    # DISPLAY CONFIG
+    # ========================================================
 
     print("")
     print("=" * 70)
     print("STARTING JOB ALERT SEARCH")
     print("=" * 70)
 
-    print(f"Keywords   : {keywords}")
-    print(f"Country    : {country}")
-    print(f"Sources    : {sources}")
-    print(f"Timelimit  : {timelimit}")
-    print(f"Experience : {experience}")
+    print(
+        f"Keywords   : {keywords}"
+    )
+
+    print(
+        f"Country    : {country}"
+    )
+
+    print(
+        f"Sources    : {sources}"
+    )
+
+    print(
+        f"Timelimit  : {timelimit}"
+    )
+
+    print(
+        f"Experience : {experience}"
+    )
+
     print("=" * 70)
 
     # ========================================================
-    # SEARCH
+    # SEARCH JOBS
     # ========================================================
 
     all_offers = []
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    #
+    # This preserves the OLD search_via_jobspy()
+    # interface from your previous code.
+    # --------------------------------------------------------
 
     for source in sources:
 
@@ -674,18 +731,23 @@ async def _run_one_check(config):
                 f"Searching source: {source}"
             )
 
+            # Your previous function interface
             offers = search_via_jobspy(
-                keywords=keywords,
-                country=country,
-                sources=[source],
-                timelimit=timelimit,
-                experience=experience,
+                keywords,
+                source,
+                country,
+                timelimit,
+                experience,
+                50
             )
 
             if not offers:
+
                 print(
-                    f"No jobs returned from {source}"
+                    f"No jobs returned from "
+                    f"{source}"
                 )
+
                 continue
 
             print(
@@ -695,7 +757,10 @@ async def _run_one_check(config):
 
             for job in offers:
 
-                if not isinstance(job, dict):
+                if not isinstance(
+                    job,
+                    dict
+                ):
                     continue
 
                 job["source"] = source
@@ -705,12 +770,17 @@ async def _run_one_check(config):
         except Exception as e:
 
             print(
-                f"Search error for {source}: {e}"
+                f"Search error for "
+                f"{source}: {e}"
             )
 
-    print("")
+    # ========================================================
+    # RAW COUNT
+    # ========================================================
+
     print(
-        f"Total raw jobs: {len(all_offers)}"
+        f"Total raw jobs: "
+        f"{len(all_offers)}"
     )
 
     # ========================================================
@@ -718,6 +788,7 @@ async def _run_one_check(config):
     # ========================================================
 
     unique_jobs = []
+
     seen_urls = set()
 
     for job in all_offers:
@@ -737,7 +808,8 @@ async def _run_one_check(config):
         unique_jobs.append(job)
 
     print(
-        f"Unique jobs after URL deduplication: "
+        f"Unique jobs after URL "
+        f"deduplication: "
         f"{len(unique_jobs)}"
     )
 
@@ -745,18 +817,24 @@ async def _run_one_check(config):
     # CV MATCHING
     # ========================================================
 
-    filtered_jobs = []
-
     print("")
     print("=" * 70)
     print("CV MATCHING")
     print("=" * 70)
 
+    filtered_jobs = []
+
     for job in unique_jobs:
 
         try:
 
-            match = calculate_cv_match(job)
+            # ------------------------------------------------
+            # Calculate CV match
+            # ------------------------------------------------
+
+            match = calculate_cv_match(
+                job
+            )
 
             score = float(
                 match.get(
@@ -765,10 +843,16 @@ async def _run_one_check(config):
                 )
             )
 
-            matched_keywords = match.get(
-                "matched_keywords",
-                []
+            matched_keywords = (
+                match.get(
+                    "matched_keywords",
+                    []
+                )
             )
+
+            # ------------------------------------------------
+            # Store match information
+            # ------------------------------------------------
 
             job["match_score"] = score
 
@@ -788,12 +872,14 @@ async def _run_one_check(config):
             )
 
             # ------------------------------------------------
-            # Threshold
+            # CV THRESHOLD
             # ------------------------------------------------
 
             if score >= CV_SCORE_THRESHOLD:
 
-                filtered_jobs.append(job)
+                filtered_jobs.append(
+                    job
+                )
 
                 print(
                     "  ✅ ACCEPTED"
@@ -809,10 +895,14 @@ async def _run_one_check(config):
 
             print(
                 f"CV matching error for "
-                f"{job.get('title', '')}: {e}"
+                f"{job.get('title', '')}: "
+                f"{e}"
             )
 
-    print("")
+    # ========================================================
+    # FILTERED COUNT
+    # ========================================================
+
     print(
         f"Relevant jobs after CV filtering: "
         f"{len(filtered_jobs)}"
@@ -836,7 +926,10 @@ async def _run_one_check(config):
 
         return
 
-    print("")
+    # ========================================================
+    # NEW JOB COUNT
+    # ========================================================
+
     print(
         f"New jobs inserted into DB: "
         f"{len(new_jobs)}"
@@ -860,14 +953,15 @@ async def _run_one_check(config):
     else:
 
         # IMPORTANT:
-        # Do NOT send Telegram message here.
+        # Don't send Telegram when there are
+        # no new jobs.
         print(
             "No new jobs. "
             "No Telegram message sent."
         )
 
     # ========================================================
-    # STATUS
+    # UPDATE STATUS
     # ========================================================
 
     try:
@@ -883,7 +977,7 @@ async def _run_one_check(config):
         )
 
     # ========================================================
-    # TOTAL DB JOBS
+    # TOTAL DATABASE JOBS
     # ========================================================
 
     try:
@@ -898,7 +992,8 @@ async def _run_one_check(config):
     except Exception as e:
 
         print(
-            f"Could not get total job count: {e}"
+            f"Could not get total job count: "
+            f"{e}"
         )
 
     print("=" * 70)
@@ -912,23 +1007,6 @@ async def _run_one_check(config):
 # ============================================================
 
 async def alert_loop():
-    """
-    Permanent background loop.
-
-    It wakes every 120 seconds and checks PostgreSQL
-    to determine whether another search is due.
-
-    Example:
-
-        interval_hours = 1
-        -> approximately every 1 hour
-
-        interval_hours = 0.5
-        -> approximately every 30 minutes
-
-        interval_hours = 2
-        -> approximately every 2 hours
-    """
 
     print(
         "Job alert loop started."
@@ -941,10 +1019,12 @@ async def alert_loop():
             config = load_config()
 
             # ==================================================
-            # ALERT DISABLED
+            # CHECK ACTIVE
             # ==================================================
 
-            if not config.get("active"):
+            if not config.get(
+                "active"
+            ):
 
                 print(
                     "Alert system is inactive."
@@ -983,12 +1063,19 @@ async def alert_loop():
 
             should_run = False
 
+            # --------------------------------------------------
             # First run
+            # --------------------------------------------------
+
             if last_run is None:
 
                 should_run = True
 
             else:
+
+                # ------------------------------------------------
+                # Convert string timestamp
+                # ------------------------------------------------
 
                 if isinstance(
                     last_run,
@@ -1001,15 +1088,19 @@ async def alert_loop():
                         )
                     )
 
-                # Handle timezone-aware DB timestamps
-                if (
-                    last_run.tzinfo
-                    is not None
-                ):
+                # ------------------------------------------------
+                # Timezone handling
+                # ------------------------------------------------
+
+                if last_run.tzinfo is not None:
 
                     now = datetime.now(
                         last_run.tzinfo
                     )
+
+                # ------------------------------------------------
+                # Calculate elapsed time
+                # ------------------------------------------------
 
                 elapsed_hours = (
                     now - last_run
@@ -1030,7 +1121,8 @@ async def alert_loop():
 
                 print(
                     f"Running alert search "
-                    f"(interval={interval_hours}h)"
+                    f"(interval="
+                    f"{interval_hours}h)"
                 )
 
                 await _run_one_check(
@@ -1050,7 +1142,7 @@ async def alert_loop():
             )
 
         # ======================================================
-        # WAIT
+        # CHECK AGAIN AFTER 120 SECONDS
         # ======================================================
 
         await asyncio.sleep(
