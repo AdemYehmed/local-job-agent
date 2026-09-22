@@ -321,6 +321,11 @@ async def get_alert_status():
 # TEST TELEGRAM
 # ============================================================
 
+@app.on_event("startup")
+async def _start_background_alert():
+    asyncio.create_task(alert_loop())
+
+
 @app.get("/api/test-telegram")
 async def test_telegram():
 

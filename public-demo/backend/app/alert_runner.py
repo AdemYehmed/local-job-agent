@@ -630,7 +630,7 @@ async def _run_one_check(config: dict) -> None:
             )
 
     else:
-        send_telegram_message("no job now")
+        await send_telegram_message("no job now")
 
         print(
             "No new jobs. "
