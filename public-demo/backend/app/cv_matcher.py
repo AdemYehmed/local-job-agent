@@ -1,228 +1,638 @@
 import re
+import unicodedata
 
 
-# Keywords extracted from Adem's CV.
-# Higher weight = stronger evidence of profile compatibility.
-CV_KEYWORDS = {
-    # Core embedded profile
-    "embedded systems": 4,
-    "embedded software": 4,
-    "embedded c": 4,
-    "c++": 4,
-    "microcontrollers": 4,
-    "stm32": 4,
-    "esp32": 4,
-    "raspberry pi": 3,
-    "rtos": 4,
-    "linux": 3,
+# ============================================================
+# CV MATCHER
+# ============================================================
 
-    # Automotive
-    "automotive": 4,
-    "automotive embedded": 5,
-    "can": 4,
-    "can bus": 4,
-    "can-tp": 5,
-    "can tp": 5,
-    "doip": 5,
-    "uds": 5,
-    "automotive diagnostics": 5,
-    "vehicle diagnostics": 5,
-    "socketcan": 5,
+# Strongest areas for your profile
+KEYWORDS = {
 
-    # Communication / hardware
-    "uart": 2,
-    "spi": 2,
-    "i2c": 2,
-    "mqtt": 2,
-    "wi-fi": 1,
-    "pcb": 2,
-    "pcb design": 3,
+    # --------------------------------------------------------
+    # EMBEDDED / ELECTRONICS
+    # --------------------------------------------------------
 
-    # Software / tools
-    "python": 1,
-    "java": 1,
-    "vhdl": 2,
-    "cmake": 2,
-    "gcc": 2,
-    "git": 1,
-    "qt": 2,
-    "qt creator": 2,
+    "embedded": 3.0,
+    "embedded systems": 3.5,
+    "embedded software": 3.5,
+    "embedded linux": 4.0,
+    "embedded engineer": 3.5,
+    "embedded developer": 3.5,
+    "embedded software engineer": 4.0,
 
-    # Testing / validation
-    "unit testing": 3,
-    "unit tests": 3,
-    "functional testing": 3,
-    "software testing": 3,
-    "google test": 3,
-    "googletest": 3,
-    "verification": 3,
-    "validation": 3,
+    "firmware": 3.0,
+    "firmware engineer": 3.5,
 
-    # System engineering
-    "system engineering": 3,
-    "systems engineering": 3,
-    "mbse": 4,
-    "requirements": 3,
-    "requirements engineering": 4,
-    "traceability": 3,
+    "electronics": 2.5,
+    "electronic": 2.5,
+    "electronic engineering": 3.0,
+    "electronics engineer": 3.0,
 
-    # AI / ML / computer vision
-    "machine learning": 2,
-    "artificial intelligence": 2,
-    "ai": 1,
-    "embedded ai": 3,
-    "edge ai": 3,
-    "tensorflow": 2,
-    "keras": 2,
-    "opencv": 2,
-    "mediapipe": 2,
-    "x-cube-ai": 3,
-    "lstm": 2,
+    "electronique": 2.5,
+    "électronique": 2.5,
+
+    "embarque": 3.0,
+    "embarqué": 3.0,
+    "embarquee": 3.0,
+    "embarquée": 3.0,
+
+    # Common typo / variation
+    "embadded": 2.5,
+
+    # --------------------------------------------------------
+    # PROGRAMMING
+    # --------------------------------------------------------
+
+    "c++": 3.0,
+    "cpp": 3.0,
+    "c": 2.5,
+    "python": 1.5,
+    "java": 1.0,
+    "vhdl": 1.5,
+
+    # --------------------------------------------------------
+    # MICROCONTROLLERS
+    # --------------------------------------------------------
+
+    "stm32": 3.0,
+    "esp32": 2.5,
+    "microcontroller": 3.0,
+    "microcontrollers": 3.0,
+    "mcu": 2.5,
+
+    # --------------------------------------------------------
+    # LINUX / SYSTEMS
+    # --------------------------------------------------------
+
+    "linux": 2.5,
+    "embedded linux": 4.0,
+    "linux embedded": 4.0,
+
+    "rtos": 2.5,
+    "real time operating system": 2.5,
+    "real-time operating system": 2.5,
+
+    # --------------------------------------------------------
+    # AUTOMOTIVE
+    # --------------------------------------------------------
+
+    "automotive": 2.5,
+    "automobile": 2.5,
+    "automotive software": 3.0,
+
+    "can": 2.5,
+    "can bus": 3.0,
+    "can-bus": 3.0,
+    "can tp": 3.5,
+    "can-tp": 3.5,
+
+    "doip": 3.5,
+    "doip protocol": 3.5,
+    "uds": 3.0,
+    "diagnostics": 2.5,
+    "automotive diagnostics": 3.5,
+    "socketcan": 3.0,
+
+    # --------------------------------------------------------
+    # COMMUNICATION
+    # --------------------------------------------------------
+
+    "uart": 1.5,
+    "spi": 1.5,
+    "i2c": 1.5,
+    "mqtt": 1.5,
+    "wifi": 1.0,
+    "wi-fi": 1.0,
+
+    # --------------------------------------------------------
+    # SOFTWARE TOOLS
+    # --------------------------------------------------------
+
+    "git": 1.0,
+    "cmake": 1.5,
+    "gcc": 1.5,
+    "qt": 1.0,
+    "google test": 2.0,
+    "unit testing": 2.0,
+    "unit test": 2.0,
+    "software testing": 2.0,
+    "software validation": 2.0,
+    "verification": 1.5,
+    "validation": 1.5,
+
+    # --------------------------------------------------------
+    # SYSTEM ENGINEERING
+    # --------------------------------------------------------
+
+    "systems engineering": 2.0,
+    "system engineering": 2.0,
+    "mbse": 2.5,
+    "requirements": 1.5,
+    "requirements engineering": 2.5,
+    "requirements management": 2.0,
+    "traceability": 1.5,
+
+    # --------------------------------------------------------
+    # AI / ML
+    # --------------------------------------------------------
+
+    "artificial intelligence": 1.5,
+    "ai": 1.0,
+    "machine learning": 2.0,
+    "deep learning": 1.5,
+    "embedded ai": 3.0,
+    "edge ai": 3.0,
+    "edge computing": 2.0,
+
+    "tensorflow": 1.5,
+    "keras": 1.0,
+    "opencv": 1.0,
+    "mediaPipe": 1.0,
+    "x-cube-ai": 2.0,
+    "lstm": 1.0,
+
+    # --------------------------------------------------------
+    # HARDWARE
+    # --------------------------------------------------------
+
+    "pcb": 1.5,
+    "pcb design": 2.0,
+    "altium": 1.5,
+    "hardware": 1.0,
+
+    # --------------------------------------------------------
+    # ROBOTICS
+    # --------------------------------------------------------
+
+    "robotics": 2.0,
+    "robot": 1.5,
+    "robotic": 1.5,
+    "autonomous systems": 2.0,
+    "autonomous": 1.0,
 }
 
 
-# Variants that should be treated as the same keyword.
-NORMALIZATION = {
-    "can tp": "can-tp",
-    "can_tp": "can-tp",
-    "can-tp": "can-tp",
+# ============================================================
+# NORMALIZATION
+# ============================================================
 
-    "google test": "google test",
-    "googletest": "google test",
-
-    "c / c++": "c++",
-    "cpp": "c++",
-
-    "stm 32": "stm32",
-    "esp 32": "esp32",
-
-    "mbse": "mbse",
-
-    "doip": "doip",
-    "uds": "uds",
-}
-
-
-def normalize_text(text: str) -> str:
+def normalize_text(text):
     """
-    Normalize job text so keyword matching is more reliable.
+    Normalize text so that:
+      Électronique -> electronique
+      Électronique -> electronique
+      EMBEDDED -> embedded
+      C++ remains c++
     """
+
     if not text:
         return ""
 
-    text = text.lower()
+    text = str(text).lower()
 
-    # Normalize common separators.
-    text = text.replace("_", " ")
-    text = text.replace("/", " ")
-    text = text.replace("–", "-")
-    text = text.replace("—", "-")
+    # Remove accents
+    text = unicodedata.normalize(
+        "NFKD",
+        text
+    )
 
-    # Collapse whitespace.
-    text = re.sub(r"\s+", " ", text)
+    text = "".join(
+        char
+        for char in text
+        if not unicodedata.combining(char)
+    )
+
+    # Normalize separators
+    text = text.replace(
+        "-",
+        "-"
+    )
+
+    text = text.replace(
+        "–",
+        "-"
+    )
+
+    text = text.replace(
+        "—",
+        "-"
+    )
+
+    # Keep letters, numbers, +, # and -
+    text = re.sub(
+        r"[^\w\s+#.-]",
+        " ",
+        text
+    )
+
+    # Collapse whitespace
+    text = re.sub(
+        r"\s+",
+        " ",
+        text
+    )
 
     return text.strip()
 
 
-def keyword_present(text: str, keyword: str) -> bool:
-    """
-    Check whether a keyword appears in the job text.
+# ============================================================
+# ALIASES
+# ============================================================
 
-    Uses word boundaries for short/common keywords to avoid
-    accidental matches inside unrelated words.
+ALIASES = {
+
+    # Embedded
+    "embedded": [
+        "embedded",
+        "embadded",
+        "embarque",
+        "embarquee",
+    ],
+
+    "embedded systems": [
+        "embedded systems",
+        "systemes embarques",
+        "systemes embarque",
+        "systèmes embarqués",
+    ],
+
+    "embedded software": [
+        "embedded software",
+        "logiciel embarque",
+        "logiciels embarques",
+    ],
+
+    "embedded linux": [
+        "embedded linux",
+        "linux embedded",
+        "linux embarque",
+    ],
+
+    # Electronics
+    "electronics": [
+        "electronics",
+        "electronic",
+        "electronique",
+        "electronic engineering",
+        "electronics engineering",
+        "ingenieur electronique",
+    ],
+
+    # Automotive
+    "automotive": [
+        "automotive",
+        "automobile",
+        "automotive software",
+    ],
+
+    # CAN
+    "can": [
+        "can bus",
+        "can-bus",
+        "can",
+    ],
+
+    # CAN-TP
+    "can-tp": [
+        "can tp",
+        "can-tp",
+        "cantp",
+    ],
+
+    # DoIP
+    "doip": [
+        "doip",
+        "doip protocol",
+        "diagnostic over ip",
+    ],
+
+    # UDS
+    "uds": [
+        "uds",
+        "unified diagnostic services",
+    ],
+
+    # Testing
+    "unit testing": [
+        "unit testing",
+        "unit test",
+        "software testing",
+    ],
+
+    # Systems engineering
+    "systems engineering": [
+        "systems engineering",
+        "system engineering",
+        "ingenierie systeme",
+        "ingenierie des systemes",
+    ],
+}
+
+
+# ============================================================
+# TEXT MATCH
+# ============================================================
+
+def keyword_present(text, keyword):
     """
+    Check whether keyword exists in normalized text.
+    """
+
     keyword = normalize_text(keyword)
 
     if not keyword:
         return False
 
-    # Special handling for very short keywords.
-    if keyword in {"c", "ai", "can", "qt", "git", "uds"}:
-        pattern = rf"\b{re.escape(keyword)}\b"
-        return re.search(pattern, text) is not None
+    # Special case C++
+    if keyword == "c++":
+        return bool(
+            re.search(
+                r"\bc\+\+\b",
+                text
+            )
+        )
 
-    return keyword in text
+    # Special case C
+    if keyword == "c":
+        return bool(
+            re.search(
+                r"(?<![a-z])c(?![a-z])",
+                text
+            )
+        )
+
+    # Normal word / phrase matching
+    pattern = (
+        r"(?<![a-z0-9])"
+        + re.escape(keyword)
+        + r"(?![a-z0-9])"
+    )
+
+    return bool(
+        re.search(
+            pattern,
+            text
+        )
+    )
 
 
-def calculate_cv_match(job: dict) -> dict:
-    """
-    Calculate compatibility between a job and the CV.
+# ============================================================
+# CHECK ALIAS
+# ============================================================
 
-    Returns:
-        score: normalized score from 0 to 10
-        raw_score: weighted keyword score
-        matched_keywords: keywords found in the job
-    """
+def alias_present(text, canonical_keyword):
 
-    title = job.get("title", "") or ""
-    description = job.get("description", "") or ""
-    company = job.get("company", "") or ""
+    aliases = ALIASES.get(
+        canonical_keyword,
+        [canonical_keyword]
+    )
 
-    # Title is useful because it usually identifies the actual role.
-    title_text = normalize_text(title)
+    for alias in aliases:
 
-    # Description contains the detailed technical requirements.
-    description_text = normalize_text(description)
+        alias_normalized = normalize_text(
+            alias
+        )
 
-    # We use title + description for matching.
-    full_text = f"{title_text} {description_text}"
+        if keyword_present(
+            text,
+            alias_normalized
+        ):
+            return True
 
-    matched = []
-    raw_score = 0
+    return False
 
-    for keyword, weight in CV_KEYWORDS.items():
 
-        # Check title and description.
-        if keyword_present(full_text, keyword):
+# ============================================================
+# CV MATCH
+# ============================================================
 
-            canonical = NORMALIZATION.get(keyword, keyword)
+def calculate_cv_match(job):
 
-            if canonical not in [x["keyword"] for x in matched]:
-                matched.append({
-                    "keyword": canonical,
-                    "weight": weight,
-                })
+    title = str(
+        job.get("title") or ""
+    )
 
-                raw_score += weight
+    description = str(
+        job.get("description") or ""
+    )
 
-    # Extra bonus if a strong keyword appears in the title.
-    title_bonus = 0
+    # IMPORTANT:
+    # Search BOTH title and complete description.
+    full_text = normalize_text(
+        title + " " + description
+    )
 
-    strong_title_keywords = {
-        "embedded": 2,
-        "automotive": 2,
-        "c++": 2,
-        "stm32": 2,
-        "can": 2,
-        "doip": 2,
-        "uds": 2,
-    }
+    normalized_title = normalize_text(
+        title
+    )
 
-    for keyword, bonus in strong_title_keywords.items():
-        if keyword_present(title_text, keyword):
-            title_bonus += bonus
+    matched_keywords = []
 
-    raw_score += title_bonus
+    raw_score = 0.0
 
-    # Maximum practical score for normalization.
-    # We don't want a job containing many weak keywords
-    # to automatically become 10/10.
-    max_score = 30
+    # ========================================================
+    # KEYWORD MATCHING
+    # ========================================================
 
-    score = min(10.0, (raw_score / max_score) * 10)
+    for keyword, weight in KEYWORDS.items():
 
-    # Round for clean Telegram output.
-    score = round(score, 1)
+        canonical = normalize_text(
+            keyword
+        )
 
-    # Sort strongest matches first.
-    matched.sort(
-        key=lambda item: item["weight"],
-        reverse=True
+        # Check aliases first
+        if canonical in ALIASES:
+
+            found = alias_present(
+                full_text,
+                canonical
+            )
+
+        else:
+
+            found = keyword_present(
+                full_text,
+                canonical
+            )
+
+        if not found:
+            continue
+
+        # ----------------------------------------------------
+        # Avoid duplicate semantic matches
+        # ----------------------------------------------------
+
+        matched_keywords.append(
+            keyword
+        )
+
+        raw_score += weight
+
+        # ----------------------------------------------------
+        # TITLE BONUS
+        # ----------------------------------------------------
+
+        if (
+            canonical in normalized_title
+            or alias_present(
+                normalized_title,
+                canonical
+            )
+        ):
+
+            raw_score += weight * 0.75
+
+    # ========================================================
+    # STRONG EMBEDDED TITLE BONUS
+    # ========================================================
+
+    strong_embedded_title = False
+
+    embedded_title_terms = [
+        "embedded",
+        "embadded",
+        "embarque",
+        "embarquee",
+        "firmware",
+        "electronics",
+        "electronique",
+    ]
+
+    for term in embedded_title_terms:
+
+        if keyword_present(
+            normalized_title,
+            term
+        ):
+
+            strong_embedded_title = True
+            break
+
+    if strong_embedded_title:
+
+        raw_score += 3.0
+
+    # ========================================================
+    # STRONG PROGRAMMING BONUS
+    # ========================================================
+
+    programming_terms = [
+        "c++",
+        "cpp",
+        "c ",
+        "python",
+        "vhdl",
+    ]
+
+    programming_found = False
+
+    for term in programming_terms:
+
+        if keyword_present(
+            normalized_title + " " + full_text,
+            term
+        ):
+
+            programming_found = True
+            break
+
+    if programming_found:
+
+        raw_score += 1.5
+
+    # ========================================================
+    # EMBEDDED + LINUX COMBINATION
+    # ========================================================
+
+    has_embedded = (
+        alias_present(
+            full_text,
+            "embedded"
+        )
+        or alias_present(
+            full_text,
+            "embedded systems"
+        )
+        or alias_present(
+            full_text,
+            "embedded software"
+        )
+    )
+
+    has_linux = keyword_present(
+        full_text,
+        "linux"
+    )
+
+    if has_embedded and has_linux:
+
+        raw_score += 3.0
+
+    # ========================================================
+    # EMBEDDED + C/C++
+    # ========================================================
+
+    has_cpp = keyword_present(
+        full_text,
+        "c++"
+    )
+
+    has_c = keyword_present(
+        full_text,
+        "c"
+    )
+
+    if has_embedded and (
+        has_cpp or has_c
+    ):
+
+        raw_score += 2.0
+
+    # ========================================================
+    # EMBEDDED + ELECTRONICS
+    # ========================================================
+
+    has_electronics = (
+        alias_present(
+            full_text,
+            "electronics"
+        )
+    )
+
+    if has_embedded and has_electronics:
+
+        raw_score += 2.0
+
+    # ========================================================
+    # NORMALIZE SCORE TO 0-10
+    # ========================================================
+
+    # We don't want scores to become enormous.
+    #
+    # 10 = very strong CV match
+    #
+    score = min(
+        10.0,
+        raw_score / 3.0
+    )
+
+    score = round(
+        score,
+        1
+    )
+
+    # ========================================================
+    # REMOVE DUPLICATES
+    # ========================================================
+
+    matched_keywords = list(
+        dict.fromkeys(
+            matched_keywords
+        )
     )
 
     return {
         "score": score,
-        "raw_score": raw_score,
-        "matched_keywords": [x["keyword"] for x in matched],
+        "matched_keywords": matched_keywords,
     }
-
