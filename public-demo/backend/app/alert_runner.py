@@ -657,108 +657,51 @@ async def _run_one_check(config: dict) -> None:
 # ============================================================
 
 async def alert_loop():
-    """
-    Background task.
-
-    Every 2 minutes:
-        - Read configuration from PostgreSQL
-        - Check whether the next search is due
-        - Run the search if necessary
-    """
-
-    print(
-        "Job alert loop started."
-    )
+    print("Job alert loop started.")
 
     while True:
-
         try:
-
             config = load_config()
 
-            if not config:
+            if not config.get("active"):
+                await asyncio.sleep(120)
+                continue
 
-                print(
-                    "No alert configuration found."
-                )
+            interval_hours = float(config.get("interval_hours", 1))
 
-            elif not config.get("active"):
+            last_run = config.get("last_run")
 
-                print(
-                    "Job alert is inactive."
-                )
+            now = datetime.now()
 
+            should_run = False
+
+            if last_run is None:
+                should_run = True
             else:
+                if isinstance(last_run, str):
+                    last_run = datetime.fromisoformat(last_run)
 
-                last_run = config.get(
-                    "last_run"
+                # Handle timezone-aware PostgreSQL timestamps
+                if last_run.tzinfo is not None:
+                    now = datetime.now(last_run.tzinfo)
+
+                elapsed_hours = (
+                    now - last_run
+                ).total_seconds() / 3600
+
+                if elapsed_hours >= interval_hours:
+                    should_run = True
+
+            if should_run:
+                print(
+                    f"Running alert search "
+                    f"(interval={interval_hours}h)"
                 )
 
-                # ------------------------------------------------
-                # Never run before
-                # ------------------------------------------------
-
-                due = last_run is None
-
-                # ------------------------------------------------
-                # Check interval
-                # ------------------------------------------------
-
-                if not due:
-
-                    last_run_dt = (
-                        datetime.fromisoformat(
-                            last_run
-                        )
-                    )
-
-                    if last_run_dt.tzinfo:
-
-                        now = datetime.now(
-                            last_run_dt.tzinfo
-                        )
-
-                    else:
-
-                        now = datetime.now()
-
-                    elapsed = (
-                        now - last_run_dt
-                    )
-
-                    interval_hours = float(
-                        config.get(
-                            "interval_hours",
-                            1
-                        )
-                    )
-
-                    due = (
-                        elapsed
-                        >= timedelta(
-                            hours=interval_hours
-                        )
-                    )
-
-                # ------------------------------------------------
-                # RUN SEARCH
-                # ------------------------------------------------
-
-                if due:
-
-                    await _run_one_check(
-                        config
-                    )
+                await _run_one_check(config)
 
         except Exception as e:
+            print(f"Alert loop error: {e}")
 
-            print(
-                f"Alert loop error: {e}"
-            )
-
-        # Check every 2 minutes whether
-        # another search is due.
-
-        await asyncio.sleep(
-            CHECK_INTERVAL_SECONDS
-        )
+        # Check the database again in 2 minutes
+        await asyncio.sleep(120)
