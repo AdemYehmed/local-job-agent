@@ -400,14 +400,21 @@ def load_config():
                         "linkedin"
                     ]
 
+            country_value = (
+                country or "monde"
+            )
+
             return {
                 "keywords": (
                     keywords or ""
                 ),
 
-                "country": (
-                    country or "monde"
-                ),
+                # On expose la valeur sous les DEUX noms
+                # ("country" et "region") pour rester compatible
+                # avec main.py, qui lit parfois "region" au lieu
+                # de "country" (ex: /api/alert-status).
+                "country": country_value,
+                "region": country_value,
 
                 "sources": (
                     sources
@@ -466,6 +473,18 @@ def save_config(config):
                 ["linkedin"]
             )
 
+            # BUGFIX:
+            # main.py (AlertConfigRequest) envoie le champ sous le
+            # nom "region", pas "country". Sans ce fallback,
+            # config.get("country", "monde") ne trouvait jamais la
+            # vraie valeur envoyée par l'utilisateur et retombait
+            # toujours sur "monde" par défaut, silencieusement.
+            country_value = (
+                config.get("region")
+                or config.get("country")
+                or "monde"
+            )
+
             cur.execute(
                 """
                 INSERT INTO alert_config (
@@ -508,10 +527,7 @@ def save_config(config):
                         ""
                     ),
 
-                    config.get(
-                        "country",
-                        "monde"
-                    ),
+                    country_value,
 
                     json.dumps(
                         sources
