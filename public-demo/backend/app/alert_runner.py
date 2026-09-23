@@ -853,6 +853,26 @@ async def _run_one_check(
         or ""
     ).strip()
 
+    # BUGFIX:
+    # main.py (/api/search-jobs) split les mots-clés sur "+" et
+    # fait une recherche PAR mot-clé ("embedded + linux" ->
+    # ["embedded", "linux"]). Ici, la chaîne complète était
+    # envoyée telle quelle à jobspy ("embedded + linux" avec le
+    # "+" littéral), ce qui ne matchait aucune offre sur
+    # LinkedIn/Indeed -> d'où le "No jobs returned" alors que
+    # /api/search-jobs, lui, fonctionnait normalement.
+    individual_keywords = [
+        k.strip()
+        for k in keywords.split("+")
+        if k.strip()
+    ]
+
+    if not individual_keywords and keywords:
+
+        individual_keywords = [
+            keywords
+        ]
+
     country = config.get(
         "country",
         "monde"
@@ -927,60 +947,66 @@ async def _run_one_check(
 
     for source in sources:
 
-        try:
+        for kw in individual_keywords:
 
-            print(
-                f"Searching source: "
-                f"{source}"
-            )
-
-            # IMPORTANT:
-            # Keep the OLD interface.
-            offers = search_via_jobspy(
-                keywords,
-                source,
-                country,
-                timelimit,
-                experience,
-                50
-            )
-
-            if not offers:
+            try:
 
                 print(
-                    f"No jobs returned "
-                    f"from {source}"
+                    f"Searching source: "
+                    f"{source} "
+                    f"(keyword: {kw})"
                 )
 
-                continue
+                # IMPORTANT:
+                # Keep the OLD interface.
+                offers = search_via_jobspy(
+                    kw,
+                    source,
+                    country,
+                    timelimit,
+                    experience,
+                    50
+                )
 
-            print(
-                f"{len(offers)} jobs "
-                f"returned from {source}"
-            )
+                if not offers:
 
-            for job in offers:
+                    print(
+                        f"No jobs returned "
+                        f"from {source} "
+                        f"for '{kw}'"
+                    )
 
-                if not isinstance(
-                    job,
-                    dict
-                ):
                     continue
 
-                job["source"] = (
-                    source
+                print(
+                    f"{len(offers)} jobs "
+                    f"returned from {source} "
+                    f"for '{kw}'"
                 )
 
-                all_offers.append(
-                    job
+                for job in offers:
+
+                    if not isinstance(
+                        job,
+                        dict
+                    ):
+                        continue
+
+                    job["source"] = (
+                        source
+                    )
+
+                    all_offers.append(
+                        job
+                    )
+
+            except Exception as e:
+
+                print(
+                    f"Search error for "
+                    f"{source} "
+                    f"(keyword: {kw}): {e}"
                 )
-
-        except Exception as e:
-
-            print(
-                f"Search error for "
-                f"{source}: {e}"
-            )
 
     # ========================================================
     # RAW JOBS
