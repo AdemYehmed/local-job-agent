@@ -23,7 +23,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # Minimum CV score required
-CV_SCORE_THRESHOLD = 4.0
+CV_SCORE_THRESHOLD = 1.0
 
 
 # ============================================================
